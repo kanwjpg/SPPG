@@ -1,31 +1,21 @@
 {% extends 'base.html' %}
-{% block title %}Checklist - {{ menu.nama_menu }}{% endblock %}
+{% block title %}Checklist {{ menu.nama_menu }} — SPPG Manager{% endblock %}{% block page_name %}Checklist Keamanan{% endblock %}
 {% block content %}
-<h3 class="fw-bold mb-1">Checklist Keamanan Pangan</h3>
-<p class="text-muted">Menu: <strong>{{ menu.nama_menu }}</strong> &middot; {{ menu.tanggal.strftime('%d-%m-%Y') }}</p>
-
-<form method="POST" class="card shadow-sm p-4" style="max-width:600px">
-  <div class="form-check mb-2">
-    <input class="form-check-input" type="checkbox" name="suhu_ok" id="suhu_ok" {{ 'checked' if checklist.suhu_ok }}>
-    <label class="form-check-label" for="suhu_ok">Suhu penyimpanan &amp; penyajian sesuai standar (makanan panas &ge;60&deg;C / dingin &le;4&deg;C)</label>
-  </div>
-  <div class="form-check mb-2">
-    <input class="form-check-input" type="checkbox" name="sampel_disimpan" id="sampel_disimpan" {{ 'checked' if checklist.sampel_disimpan }}>
-    <label class="form-check-label" for="sampel_disimpan">Sampel makanan disimpan minimal 24 jam (untuk investigasi jika ada keluhan)</label>
-  </div>
-  <div class="form-check mb-2">
-    <input class="form-check-input" type="checkbox" name="waktu_saji_ok" id="waktu_saji_ok" {{ 'checked' if checklist.waktu_saji_ok }}>
-    <label class="form-check-label" for="waktu_saji_ok">Makanan disajikan dalam batas waktu aman sejak dimasak (maks. 4 jam)</label>
-  </div>
-  <div class="form-check mb-3">
-    <input class="form-check-input" type="checkbox" name="kebersihan_ok" id="kebersihan_ok" {{ 'checked' if checklist.kebersihan_ok }}>
-    <label class="form-check-label" for="kebersihan_ok">Kebersihan peralatan masak &amp; wadah distribusi terverifikasi</label>
-  </div>
-  <div class="mb-3">
-    <label class="form-label">Petugas Pemeriksa</label>
-    <input type="text" name="petugas" class="form-control" value="{{ checklist.petugas or '' }}" required>
-  </div>
-  <button type="submit" class="btn btn-warning"><i class="bi bi-shield-check"></i> Simpan Checklist</button>
-  <a href="{{ url_for('checklist_list') }}" class="btn btn-outline-secondary">Batal</a>
+<div class="page-head reveal"><div><a href="{{ url_for('checklist_list') }}" class="back-link"><i class="bi bi-arrow-left"></i> Kembali</a><span class="section-kicker mt-3">Food safety check</span><h1>{{ menu.nama_menu }}</h1><p>{{ menu.tanggal.strftime('%d %B %Y') }} · Verifikasi pra-distribusi.</p></div></div>
+<form method="POST" class="surface-card checklist-card reveal">
+<div class="checklist-progress"><div><span>Verifikasi keamanan</span><strong id="checkCount">0 / 4</strong></div><div class="progress-track"><span id="checkBar"></span></div></div>
+<div class="check-items">
+<label class="check-item"><input type="checkbox" name="suhu_ok" class="check-input" {{ 'checked' if checklist.suhu_ok }}><span class="check-box"><i class="bi bi-check"></i></span><span><strong>Suhu sesuai standar</strong><small>Makanan panas ≥60°C atau makanan dingin ≤4°C.</small></span></label>
+<label class="check-item"><input type="checkbox" name="sampel_disimpan" class="check-input" {{ 'checked' if checklist.sampel_disimpan }}><span class="check-box"><i class="bi bi-check"></i></span><span><strong>Sampel makanan disimpan</strong><small>Sampel tersedia minimal 24 jam untuk kebutuhan investigasi.</small></span></label>
+<label class="check-item"><input type="checkbox" name="waktu_saji_ok" class="check-input" {{ 'checked' if checklist.waktu_saji_ok }}><span class="check-box"><i class="bi bi-check"></i></span><span><strong>Waktu saji aman</strong><small>Makanan disajikan dalam batas waktu aman sejak dimasak.</small></span></label>
+<label class="check-item"><input type="checkbox" name="kebersihan_ok" class="check-input" {{ 'checked' if checklist.kebersihan_ok }}><span class="check-box"><i class="bi bi-check"></i></span><span><strong>Kebersihan terverifikasi</strong><small>Peralatan masak dan wadah distribusi sudah diperiksa.</small></span></label>
+</div>
+<label class="modern-label">Petugas pemeriksa<div class="input-icon"><i class="bi bi-person-badge"></i><input type="text" name="petugas" value="{{ checklist.petugas or '' }}" placeholder="Nama petugas" required></div></label>
+<div class="form-actions"><a href="{{ url_for('checklist_list') }}" class="btn btn-ghost">Batal</a><button class="btn btn-lime"><i class="bi bi-shield-check"></i> Simpan checklist</button></div>
 </form>
 {% endblock %}
+{% block scripts %}<script>
+const checks=[...document.querySelectorAll('.check-input')], count=document.getElementById('checkCount'), bar=document.getElementById('checkBar');
+function updateChecks(){const n=checks.filter(x=>x.checked).length;count.textContent=`${n} / 4`;bar.style.width=`${n*25}%`;}
+checks.forEach(x=>x.addEventListener('change',updateChecks));updateChecks();
+</script>{% endblock %}

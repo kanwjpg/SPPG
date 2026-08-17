@@ -1,69 +1,16 @@
 {% extends 'base.html' %}
-{% block title %}Tambah Menu - SPPG Manager{% endblock %}
+{% block title %}Tambah Menu — SPPG Manager{% endblock %}{% block page_name %}Tambah Menu{% endblock %}
 {% block content %}
-<h3 class="fw-bold mb-3">Tambah Menu Baru</h3>
-<p class="text-muted">Kalori &amp; protein dihitung berdasarkan acuan Angka Kecukupan Gizi (AKG) Juknis BGN per porsi bahan.</p>
-
-<form method="POST" class="card shadow-sm p-4">
-  <div class="row g-3 mb-3">
-    <div class="col-md-6">
-      <label class="form-label">Nama Menu</label>
-      <input type="text" name="nama_menu" class="form-control" required placeholder="Contoh: Nasi Ayam Sayur">
-    </div>
-    <div class="col-md-3">
-      <label class="form-label">Tanggal</label>
-      <input type="date" name="tanggal" class="form-control" required value="{{ '' }}">
-    </div>
-    <div class="col-md-3">
-      <label class="form-label">Sekolah Tujuan</label>
-      <select name="sekolah_id" class="form-select">
-        <option value="">-- Umum / Belum ditentukan --</option>
-        {% for s in sekolahs %}
-        <option value="{{ s.id }}">{{ s.nama }}</option>
-        {% endfor %}
-      </select>
-    </div>
-  </div>
-
-  <hr>
-  <h5>Komposisi Bahan &amp; Gizi per Porsi</h5>
-  <div id="bahan-rows">
-    <div class="row g-2 mb-2 bahan-row">
-      <div class="col-md-4"><input type="text" name="nama_bahan[]" class="form-control" placeholder="Nama bahan (contoh: Beras)"></div>
-      <div class="col-md-2"><input type="number" step="0.1" name="gram_per_porsi[]" class="form-control" placeholder="Gram/porsi"></div>
-      <div class="col-md-2"><input type="number" step="0.1" name="kalori[]" class="form-control" placeholder="Kalori (kkal)"></div>
-      <div class="col-md-2"><input type="number" step="0.1" name="protein[]" class="form-control" placeholder="Protein (g)"></div>
-      <div class="col-md-2"><button type="button" class="btn btn-outline-danger w-100 remove-row"><i class="bi bi-trash"></i></button></div>
-    </div>
-  </div>
-  <button type="button" id="add-row" class="btn btn-outline-success btn-sm mb-4"><i class="bi bi-plus"></i> Tambah Bahan</button>
-
-  <div>
-    <button type="submit" class="btn btn-success"><i class="bi bi-check-circle"></i> Simpan Menu</button>
-    <a href="{{ url_for('menu_list') }}" class="btn btn-outline-secondary">Batal</a>
-  </div>
+<div class="page-head reveal"><div><span class="section-kicker">Create menu</span><h1>Buat menu baru</h1><p>Tambahkan komposisi bahan dan data gizi per porsi.</p></div></div>
+<form method="POST" class="surface-card form-card reveal">
+<div class="form-section"><div class="form-section-title"><span>01</span><div><strong>Informasi menu</strong><small>Data dasar menu yang akan disiapkan.</small></div></div><div class="form-grid"><label>Nama menu<input type="text" name="nama_menu" required placeholder="Contoh: Nasi Ayam Sayur"></label><label>Tanggal<input type="date" name="tanggal" id="menuDate" required></label><label>Sekolah tujuan<select name="sekolah_id"><option value="">Umum / belum ditentukan</option>{% for s in sekolahs %}<option value="{{ s.id }}">{{ s.nama }}</option>{% endfor %}</select></label></div></div>
+<div class="form-section"><div class="form-section-title"><span>02</span><div><strong>Komposisi & gizi</strong><small>Isi nilai per porsi untuk setiap bahan.</small></div></div><div class="ingredient-head"><span>Bahan</span><span>Gram</span><span>Kalori</span><span>Protein</span><span></span></div><div id="bahan-rows"><div class="ingredient-row bahan-row"><input type="text" name="nama_bahan[]" placeholder="Nama bahan"><input type="number" step="0.1" name="gram_per_porsi[]" placeholder="0"><input type="number" step="0.1" name="kalori[]" placeholder="0"><input type="number" step="0.1" name="protein[]" placeholder="0"><button type="button" class="icon-btn small danger remove-row"><i class="bi bi-trash"></i></button></div></div><button type="button" id="add-row" class="btn btn-soft mt-3"><i class="bi bi-plus-lg"></i> Tambah bahan</button></div>
+<div class="form-actions"><a href="{{ url_for('menu_list') }}" class="btn btn-ghost">Batal</a><button type="submit" class="btn btn-lime"><i class="bi bi-check2"></i> Simpan menu</button></div>
 </form>
 {% endblock %}
-
-{% block scripts %}
-<script>
-document.getElementById('add-row').addEventListener('click', function () {
-  const container = document.getElementById('bahan-rows');
-  const row = container.querySelector('.bahan-row').cloneNode(true);
-  row.querySelectorAll('input').forEach(i => i.value = '');
-  container.appendChild(row);
-});
-document.getElementById('bahan-rows').addEventListener('click', function (e) {
-  const btn = e.target.closest('.remove-row');
-  if (!btn) return;
-  const rows = document.querySelectorAll('.bahan-row');
-  if (rows.length > 1) btn.closest('.bahan-row').remove();
-});
-document.addEventListener('DOMContentLoaded', function () {
-  const dateInput = document.querySelector('input[name="tanggal"]');
-  if (dateInput && !dateInput.value) {
-    dateInput.value = new Date().toISOString().split('T')[0];
-  }
-});
-</script>
-{% endblock %}
+{% block scripts %}<script>
+const rows=document.getElementById('bahan-rows'), add=document.getElementById('add-row');
+if(add){add.addEventListener('click',()=>{const row=rows.querySelector('.bahan-row').cloneNode(true);row.querySelectorAll('input').forEach(i=>i.value='');rows.appendChild(row);row.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],{duration:260,easing:'ease-out'});});}
+if(rows){rows.addEventListener('click',e=>{const btn=e.target.closest('.remove-row');if(!btn)return;const all=rows.querySelectorAll('.bahan-row');if(all.length>1)btn.closest('.bahan-row').remove();});}
+const d=document.getElementById('menuDate');if(d&&!d.value)d.value=new Date().toISOString().slice(0,10);
+</script>{% endblock %}

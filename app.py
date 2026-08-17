@@ -152,12 +152,27 @@ def dashboard():
     total_sekolah = Sekolah.query.count()
     total_siswa = db.session.query(db.func.sum(Sekolah.jumlah_siswa)).scalar() or 0
     menu_belum_checklist = Menu.query.filter(~Menu.checklist.has()).count()
-    return render_template('dashboard.html',
-                            total_menu_hari_ini=total_menu_hari_ini,
-                            bahan_menipis=bahan_menipis,
-                            total_sekolah=total_sekolah,
-                            total_siswa=total_siswa,
-                            menu_belum_checklist=menu_belum_checklist)
+
+    total_menu = Menu.query.count()
+    total_distribusi = Menu.query.filter_by(status='Terdistribusi').count()
+    total_siap = Menu.query.filter_by(status='Siap Distribusi').count()
+    total_disiapkan = Menu.query.filter_by(status='Disiapkan').count()
+
+    recent_menus = Menu.query.order_by(Menu.tanggal.desc(), Menu.id.desc()).limit(6).all()
+
+    return render_template(
+        'dashboard.html',
+        total_menu_hari_ini=total_menu_hari_ini,
+        bahan_menipis=bahan_menipis,
+        total_sekolah=total_sekolah,
+        total_siswa=total_siswa,
+        menu_belum_checklist=menu_belum_checklist,
+        total_menu=total_menu,
+        total_distribusi=total_distribusi,
+        total_siap=total_siap,
+        total_disiapkan=total_disiapkan,
+        recent_menus=recent_menus
+    )
 
 
 # ---------------- ROUTES: MENU + GIZI ----------------

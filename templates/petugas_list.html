@@ -1,57 +1,7 @@
 {% extends 'base.html' %}
-{% block title %}Petugas Pemeriksa - SPPG Manager{% endblock %}
+{% block title %}Petugas — SPPG Manager{% endblock %}{% block page_name %}Petugas Pemeriksa{% endblock %}
 {% block content %}
-<h3 class="fw-bold mb-1">Daftar Petugas Pemeriksa</h3>
-<p class="text-muted">Rekam jejak siapa yang memeriksa keamanan pangan tiap menu — untuk akuntabilitas dan audit.</p>
-
-<div class="row g-3 mb-4">
-  {% for nama, records in ringkasan.items() %}
-  <div class="col-md-4">
-    <div class="card shadow-sm h-100">
-      <div class="card-body">
-        <h5 class="card-title"><i class="bi bi-person-badge text-success"></i> {{ nama }}</h5>
-        <p class="text-muted small mb-1">{{ records|length }} menu diperiksa</p>
-        <p class="mb-0">
-          <span class="badge bg-success">{{ records|selectattr('lolos')|list|length }} Lolos</span>
-          <span class="badge bg-danger">{{ (records|length) - (records|selectattr('lolos')|list|length) }} Belum Lolos</span>
-        </p>
-      </div>
-    </div>
-  </div>
-  {% else %}
-  <div class="col-12"><p class="text-muted text-center py-4">Belum ada catatan pemeriksaan.</p></div>
-  {% endfor %}
-</div>
-
-<h5 class="fw-bold mb-3">Riwayat Pemeriksaan Lengkap</h5>
-<div class="table-responsive">
-<table class="table table-hover bg-white shadow-sm rounded">
-  <thead class="table-light">
-    <tr>
-      <th>Waktu Diperiksa</th>
-      <th>Petugas</th>
-      <th>Menu</th>
-      <th>Hasil</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for c in checklists %}
-    <tr>
-      <td>{{ c.dicatat_pada.strftime('%d-%m-%Y %H:%M') if c.dicatat_pada else '-' }}</td>
-      <td>{{ c.petugas }}</td>
-      <td><a href="{{ url_for('menu_detail', menu_id=c.menu.id) }}">{{ c.menu.nama_menu }}</a></td>
-      <td>
-        {% if c.lolos %}
-          <span class="badge bg-success"><i class="bi bi-check-circle"></i> Lolos</span>
-        {% else %}
-          <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Belum Lolos</span>
-        {% endif %}
-      </td>
-    </tr>
-    {% else %}
-    <tr><td colspan="4" class="text-center text-muted py-4">Belum ada catatan pemeriksaan.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
-</div>
+<div class="page-head reveal"><div><span class="section-kicker">Accountability</span><h1>Petugas pemeriksa</h1><p>Rekam jejak pemeriksaan keamanan pangan untuk audit dan akuntabilitas.</p></div></div>
+<div class="people-grid reveal">{% for nama, records in ringkasan.items() %}<div class="person-card"><div class="person-avatar">{{ nama[:1]|upper }}</div><div><strong>{{ nama }}</strong><span>{{ records|length }} menu diperiksa</span></div><div class="person-stats"><span class="success-text">{{ records|selectattr('lolos')|list|length }} lolos</span><span>{{ (records|length) - (records|selectattr('lolos')|list|length) }} belum</span></div></div>{% else %}<div class="surface-card empty-state full"><i class="bi bi-person-badge"></i><p>Belum ada catatan pemeriksaan.</p></div>{% endfor %}</div>
+<div class="surface-card reveal"><div class="card-heading"><div><span class="section-kicker">Audit trail</span><h2>Riwayat pemeriksaan</h2></div></div><div class="table-responsive"><table class="table-modern"><thead><tr><th>Waktu</th><th>Petugas</th><th>Menu</th><th>Hasil</th></tr></thead><tbody>{% for c in checklists %}<tr><td>{{ c.dicatat_pada.strftime('%d %b %Y · %H:%M') if c.dicatat_pada else '-' }}</td><td>{{ c.petugas }}</td><td><a href="{{ url_for('menu_detail', menu_id=c.menu.id) }}" class="table-title">{{ c.menu.nama_menu }}</a></td><td>{% if c.lolos %}<span class="status-badge success">Lolos</span>{% else %}<span class="status-badge danger">Belum lolos</span>{% endif %}</td></tr>{% else %}<tr><td colspan="4"><div class="empty-state"><i class="bi bi-clock-history"></i><p>Belum ada riwayat.</p></div></td></tr>{% endfor %}</tbody></table></div></div>
 {% endblock %}

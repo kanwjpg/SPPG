@@ -1,70 +1,109 @@
 {% extends 'base.html' %}
-{% block title %}Dashboard - SPPG Manager{% endblock %}
+{% block title %}Dashboard — SPPG Manager{% endblock %}
+{% block page_name %}Dashboard{% endblock %}
 {% block content %}
-<h3 class="mb-4 fw-bold">Dashboard</h3>
-<div class="row g-3">
-  <div class="col-md-3 col-6">
-    <div class="card stat-card border-0 shadow-sm">
-      <div class="card-body">
-        <div class="text-muted small">Menu Hari Ini</div>
-        <div class="fs-2 fw-bold">{{ total_menu_hari_ini }}</div>
-        <i class="bi bi-egg-fried text-success"></i>
-      </div>
+<section class="hero-panel reveal">
+  <div>
+    <div class="section-kicker"><span></span> Operational overview</div>
+    <h1>Kelola operasional SPPG dengan <em>lebih jelas.</em></h1>
+    <p>Pantau menu, stok bahan baku, distribusi, dan keamanan pangan dari satu dashboard yang ringkas.</p>
+    <div class="hero-actions">
+      <a href="{{ url_for('menu_tambah') }}" class="btn btn-lime"><i class="bi bi-plus-lg"></i> Buat Menu</a>
+      <a href="{{ url_for('checklist_list') }}" class="btn btn-ghost"><i class="bi bi-shield-check"></i> Cek Keamanan</a>
     </div>
   </div>
-  <div class="col-md-3 col-6">
-    <div class="card stat-card border-0 shadow-sm">
-      <div class="card-body">
-        <div class="text-muted small">Sekolah Terdaftar</div>
-        <div class="fs-2 fw-bold">{{ total_sekolah }}</div>
-        <i class="bi bi-building text-primary"></i>
+  <div class="hero-orbit">
+    <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+    <div class="hero-mini-card">
+      <div class="mini-card-top"><span>Hari ini</span><i class="bi bi-three-dots"></i></div>
+      <strong>{{ total_menu_hari_ini }}</strong>
+      <small>menu terjadwal</small>
+      <div class="mini-bars"><span style="height:35%"></span><span style="height:62%"></span><span style="height:48%"></span><span style="height:82%"></span><span style="height:68%"></span><span style="height:94%"></span></div>
+    </div>
+    <span class="float-pill pill-a"><i class="bi bi-check2-circle"></i> Sistem aktif</span>
+    <span class="float-pill pill-b"><i class="bi bi-box-seam"></i> {{ bahan_menipis|length }} stok perlu cek</span>
+  </div>
+</section>
+
+<section class="stats-grid reveal">
+  <div class="stat-card">
+    <div class="stat-icon lime"><i class="bi bi-egg-fried"></i></div>
+    <div class="stat-copy"><span>Menu hari ini</span><strong>{{ total_menu_hari_ini }}</strong><small>Terjadwal hari ini</small></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="bi bi-building"></i></div>
+    <div class="stat-copy"><span>Sekolah</span><strong>{{ total_sekolah }}</strong><small>{{ total_siswa }} penerima manfaat</small></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon dark"><i class="bi bi-truck"></i></div>
+    <div class="stat-copy"><span>Terdistribusi</span><strong>{{ total_distribusi }}</strong><small>Dari {{ total_menu }} total menu</small></div>
+  </div>
+  <div class="stat-card {% if bahan_menipis %}warning-card{% endif %}">
+    <div class="stat-icon orange"><i class="bi bi-exclamation-triangle"></i></div>
+    <div class="stat-copy"><span>Stok menipis</span><strong>{{ bahan_menipis|length }}</strong><small>{% if bahan_menipis %}Perlu ditindaklanjuti{% else %}Semua stok aman{% endif %}</small></div>
+  </div>
+</section>
+
+<div class="dashboard-grid reveal">
+  <section class="surface-card wide-card">
+    <div class="card-heading">
+      <div><span class="section-kicker">Status operasional</span><h2>Ringkasan menu</h2></div>
+      <a href="{{ url_for('menu_list') }}" class="text-link">Lihat semua <i class="bi bi-arrow-up-right"></i></a>
+    </div>
+    <div class="progress-summary">
+      <div class="progress-ring"><span>{{ total_menu }}</span><small>menu</small></div>
+      <div class="status-list">
+        <div><span><i class="status-dot dot-green"></i>Terdistribusi</span><strong>{{ total_distribusi }}</strong></div>
+        <div><span><i class="status-dot dot-lime"></i>Siap distribusi</span><strong>{{ total_siap }}</strong></div>
+        <div><span><i class="status-dot dot-gray"></i>Disiapkan</span><strong>{{ total_disiapkan }}</strong></div>
       </div>
     </div>
-  </div>
-  <div class="col-md-3 col-6">
-    <div class="card stat-card border-0 shadow-sm">
-      <div class="card-body">
-        <div class="text-muted small">Total Penerima Manfaat</div>
-        <div class="fs-2 fw-bold">{{ total_siswa }}</div>
-        <i class="bi bi-people text-info"></i>
-      </div>
+    <div class="table-clean">
+      {% for m in recent_menus %}
+      <a class="menu-row" href="{{ url_for('menu_detail', menu_id=m.id) }}">
+        <div class="menu-symbol"><i class="bi bi-egg-fried"></i></div>
+        <div class="menu-main"><strong>{{ m.nama_menu }}</strong><span>{{ m.tanggal.strftime('%d %b %Y') }} · {{ m.sekolah.nama if m.sekolah else 'Umum' }}</span></div>
+        <span class="status-badge {{ 'success' if m.status == 'Terdistribusi' else ('lime' if m.status == 'Siap Distribusi' else 'muted') }}">{{ m.status }}</span>
+        <i class="bi bi-chevron-right row-arrow"></i>
+      </a>
+      {% else %}
+      <div class="empty-state"><i class="bi bi-inbox"></i><p>Belum ada menu.</p></div>
+      {% endfor %}
     </div>
-  </div>
-  <div class="col-md-3 col-6">
-    <div class="card stat-card border-0 shadow-sm {{ 'border-danger' if bahan_menipis }}">
-      <div class="card-body">
-        <div class="text-muted small">Stok Menipis</div>
-        <div class="fs-2 fw-bold {{ 'text-danger' if bahan_menipis }}">{{ bahan_menipis|length }}</div>
-        <i class="bi bi-exclamation-triangle {{ 'text-danger' if bahan_menipis else 'text-secondary' }}"></i>
-      </div>
+  </section>
+
+  <aside class="surface-card alert-card">
+    <div class="card-heading">
+      <div><span class="section-kicker">Perhatian</span><h2>Butuh tindakan</h2></div>
+      <i class="bi bi-lightning-charge-fill heading-icon"></i>
     </div>
-  </div>
+    {% if bahan_menipis %}
+      <div class="attention-block danger">
+        <div class="attention-icon"><i class="bi bi-box-seam"></i></div>
+        <div><strong>{{ bahan_menipis|length }} stok menipis</strong><p>{% for b in bahan_menipis[:3] %}{{ b.nama }}{% if not loop.last %}, {% endif %}{% endfor %}{% if bahan_menipis|length > 3 %} + lainnya{% endif %}</p></div>
+      </div>
+      <a href="{{ url_for('stok_list') }}" class="action-line">Periksa stok <i class="bi bi-arrow-right"></i></a>
+    {% endif %}
+    {% if menu_belum_checklist > 0 %}
+      <div class="attention-block">
+        <div class="attention-icon"><i class="bi bi-shield-exclamation"></i></div>
+        <div><strong>{{ menu_belum_checklist }} menu belum checklist</strong><p>Checklist wajib sebelum distribusi.</p></div>
+      </div>
+      <a href="{{ url_for('checklist_list') }}" class="action-line">Buka checklist <i class="bi bi-arrow-right"></i></a>
+    {% endif %}
+    {% if not bahan_menipis and menu_belum_checklist == 0 %}
+      <div class="all-good"><i class="bi bi-check2-circle"></i><strong>Semua aman</strong><p>Tidak ada tindakan kritis saat ini.</p></div>
+    {% endif %}
+  </aside>
 </div>
 
-{% if bahan_menipis %}
-<div class="alert alert-warning mt-4">
-  <i class="bi bi-exclamation-triangle-fill"></i> <strong>Peringatan stok menipis:</strong>
-  {% for b in bahan_menipis %}
-    {{ b.nama }} ({{ b.stok_saat_ini }} {{ b.satuan }}){% if not loop.last %}, {% endif %}
-  {% endfor %}
-</div>
-{% endif %}
-
-{% if menu_belum_checklist > 0 %}
-<div class="alert alert-danger mt-2">
-  <i class="bi bi-shield-exclamation"></i> Ada <strong>{{ menu_belum_checklist }}</strong> menu yang belum melewati checklist keamanan pangan. Menu tidak boleh didistribusikan sebelum checklist lolos.
-</div>
-{% endif %}
-
-<div class="row mt-3 g-3">
-  <div class="col-md-4">
-    <a href="{{ url_for('menu_tambah') }}" class="btn btn-success w-100 py-3"><i class="bi bi-plus-circle"></i> Tambah Menu Baru</a>
+<section class="quick-actions reveal">
+  <div class="section-kicker"><span></span> Quick actions</div>
+  <div class="quick-grid">
+    <a href="{{ url_for('menu_tambah') }}"><span><i class="bi bi-plus-lg"></i></span><strong>Tambah menu</strong><small>Buat menu & gizi baru</small><i class="bi bi-arrow-up-right"></i></a>
+    <a href="{{ url_for('stok_tambah') }}"><span><i class="bi bi-box-seam"></i></span><strong>Tambah bahan</strong><small>Catat stok bahan baku</small><i class="bi bi-arrow-up-right"></i></a>
+    <a href="{{ url_for('checklist_list') }}"><span><i class="bi bi-shield-check"></i></span><strong>Keamanan pangan</strong><small>Review checklist distribusi</small><i class="bi bi-arrow-up-right"></i></a>
+    <a href="{{ url_for('sekolah_tambah') }}"><span><i class="bi bi-building-add"></i></span><strong>Tambah sekolah</strong><small>Daftarkan penerima manfaat</small><i class="bi bi-arrow-up-right"></i></a>
   </div>
-  <div class="col-md-4">
-    <a href="{{ url_for('stok_tambah') }}" class="btn btn-primary w-100 py-3"><i class="bi bi-box-seam"></i> Tambah Bahan Baku</a>
-  </div>
-  <div class="col-md-4">
-    <a href="{{ url_for('checklist_list') }}" class="btn btn-warning w-100 py-3"><i class="bi bi-shield-check"></i> Cek Keamanan Pangan</a>
-  </div>
-</div>
+</section>
 {% endblock %}

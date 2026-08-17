@@ -1,17 +1,6 @@
 {% extends 'base.html' %}
-{% block title %}Tambah Sekolah{% endblock %}
+{% block title %}Tambah Sekolah — SPPG Manager{% endblock %}{% block page_name %}Tambah Sekolah{% endblock %}
 {% block content %}
-<h3 class="fw-bold mb-3">Tambah Sekolah</h3>
-<form method="POST" class="card shadow-sm p-4" style="max-width:500px">
-  <div class="mb-3">
-    <label class="form-label">Nama Sekolah</label>
-    <input type="text" name="nama" class="form-control" required>
-  </div>
-  <div class="mb-3">
-    <label class="form-label">Jumlah Siswa</label>
-    <input type="number" name="jumlah_siswa" class="form-control" required>
-  </div>
-  <button type="submit" class="btn btn-primary">Simpan</button>
-  <a href="{{ url_for('sekolah_list') }}" class="btn btn-outline-secondary">Batal</a>
-</form>
+<div class="page-head reveal"><div><span class="section-kicker">Beneficiaries</span><h1>Tambah sekolah</h1><p>Daftarkan sekolah penerima manfaat baru.</p></div></div>
+<form method="POST" class="surface-card form-card narrow reveal"><div class="form-grid single"><label>Nama sekolah<input type="text" name="nama" required placeholder="Contoh: SDN 1 Purwodadi"></label><label>Jumlah siswa<input type="number" name="jumlah_siswa" min="0" required placeholder="0"></label></div><div class="form-actions"><a href="{{ url_for('sekolah_list') }}" class="btn btn-ghost">Batal</a><button class="btn btn-lime"><i class="bi bi-building-add"></i> Simpan sekolah</button></div></form>
 {% endblock %}
