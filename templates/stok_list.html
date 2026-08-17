@@ -15,6 +15,7 @@
       <th>Stok Minimum</th>
       <th>Status</th>
       <th>Transaksi</th>
+      <th></th>
     </tr>
   </thead>
   <tbody>
@@ -34,9 +35,14 @@
           <button type="submit" class="btn btn-sm btn-outline-primary">Simpan</button>
         </form>
       </td>
+      <td>
+        <form method="POST" action="{{ url_for('stok_hapus', bahan_id=b.id) }}" onsubmit="return confirm('Yakin ingin menghapus bahan \'{{ b.nama }}\'? Riwayat transaksinya juga akan terhapus.');">
+          <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+        </form>
+      </td>
     </tr>
     {% else %}
-    <tr><td colspan="5" class="text-center text-muted py-4">Belum ada bahan baku tercatat.</td></tr>
+    <tr><td colspan="6" class="text-center text-muted py-4">Belum ada bahan baku tercatat.</td></tr>
     {% endfor %}
   </tbody>
 </table>

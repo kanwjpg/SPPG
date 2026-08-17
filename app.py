@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -84,7 +84,7 @@ class StokTransaksi(db.Model):
     tanggal = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     keterangan = db.Column(db.String(200))
 
-    bahan = db.relationship('BahanBaku', backref='transaksi')
+    bahan = db.relationship('BahanBaku', backref=db.backref('transaksi', cascade='all, delete-orphan'))
 
 
 class ChecklistKeamanan(db.Model):
@@ -214,6 +214,17 @@ def menu_detail(menu_id):
     return render_template('menu_detail.html', menu=menu)
 
 
+@app.route('/menu/<int:menu_id>/hapus', methods=['POST'])
+@login_required
+def menu_hapus(menu_id):
+    menu = Menu.query.get_or_404(menu_id)
+    nama = menu.nama_menu
+    db.session.delete(menu)  # cascade otomatis hapus MenuItem & ChecklistKeamanan terkait
+    db.session.commit()
+    flash(f'Menu "{nama}" berhasil dihapus.', 'success')
+    return redirect(url_for('menu_list'))
+
+
 # ---------------- ROUTES: STOK BAHAN BAKU ----------------
 
 @app.route('/stok')
@@ -256,6 +267,17 @@ def stok_transaksi(bahan_id):
     db.session.add(trx)
     db.session.commit()
     flash(f'Transaksi stok "{bahan.nama}" tercatat.', 'success')
+    return redirect(url_for('stok_list'))
+
+
+@app.route('/stok/<int:bahan_id>/hapus', methods=['POST'])
+@login_required
+def stok_hapus(bahan_id):
+    bahan = BahanBaku.query.get_or_404(bahan_id)
+    nama = bahan.nama
+    db.session.delete(bahan)  # cascade otomatis hapus riwayat transaksi terkait
+    db.session.commit()
+    flash(f'Bahan baku "{nama}" berhasil dihapus.', 'success')
     return redirect(url_for('stok_list'))
 
 
@@ -310,6 +332,20 @@ def checklist_distribusikan(menu_id):
     return redirect(url_for('checklist_list'))
 
 
+@app.route('/petugas')
+@login_required
+def petugas_list():
+    checklists = ChecklistKeamanan.query.filter(
+        ChecklistKeamanan.petugas.isnot(None), ChecklistKeamanan.petugas != ''
+    ).order_by(ChecklistKeamanan.dicatat_pada.desc()).all()
+
+    ringkasan = {}
+    for c in checklists:
+        ringkasan.setdefault(c.petugas, []).append(c)
+
+    return render_template('petugas_list.html', ringkasan=ringkasan, checklists=checklists)
+
+
 # ---------------- ROUTES: SEKOLAH (pendukung) ----------------
 
 @app.route('/sekolah')
@@ -340,6 +376,57 @@ def init_db():
         u = User(username='admin', nama='Admin SPPG')
         u.set_password('sppg2026')
         db.session.add(u)
+        db.session.commit()
+
+    # Auto-isi data contoh kalau database masih kosong (berguna di paket
+    # hosting gratis yang tidak menyediakan akses Shell untuk jalankan seed.py manual)
+    if Sekolah.query.count() == 0:
+        sekolahs = [
+            Sekolah(nama="SDN 1 Purwodadi", jumlah_siswa=310),
+            Sekolah(nama="SDN 3 Grobogan", jumlah_siswa=245),
+            Sekolah(nama="SMPN 2 Purwodadi", jumlah_siswa=480),
+        ]
+        db.session.add_all(sekolahs)
+        db.session.commit()
+
+    if BahanBaku.query.count() == 0:
+        bahans = [
+            BahanBaku(nama="Beras", satuan="kg", stok_saat_ini=180, stok_minimum=100),
+            BahanBaku(nama="Ayam", satuan="kg", stok_saat_ini=25, stok_minimum=40),
+            BahanBaku(nama="Telur", satuan="butir", stok_saat_ini=600, stok_minimum=300),
+            BahanBaku(nama="Bayam", satuan="kg", stok_saat_ini=15, stok_minimum=20),
+            BahanBaku(nama="Minyak Goreng", satuan="liter", stok_saat_ini=40, stok_minimum=15),
+        ]
+        db.session.add_all(bahans)
+        db.session.commit()
+        for b in bahans:
+            db.session.add(StokTransaksi(bahan_id=b.id, jenis="masuk", jumlah=b.stok_saat_ini, keterangan="Stok awal"))
+        db.session.commit()
+
+    if Menu.query.count() == 0:
+        sekolah1 = Sekolah.query.first()
+        m1 = Menu(nama_menu="Nasi Ayam Sayur Bayam", tanggal=date.today(), sekolah_id=sekolah1.id, status="Disiapkan")
+        db.session.add(m1)
+        db.session.flush()
+        db.session.add_all([
+            MenuItem(menu_id=m1.id, nama_bahan="Nasi Putih", gram_per_porsi=150, kalori=195, protein=3.6),
+            MenuItem(menu_id=m1.id, nama_bahan="Ayam Goreng", gram_per_porsi=80, kalori=200, protein=18),
+            MenuItem(menu_id=m1.id, nama_bahan="Tumis Bayam", gram_per_porsi=60, kalori=35, protein=2.5),
+        ])
+
+        m2 = Menu(nama_menu="Nasi Telur Balado", tanggal=date.today() - timedelta(days=1), sekolah_id=sekolah1.id, status="Terdistribusi")
+        db.session.add(m2)
+        db.session.flush()
+        db.session.add_all([
+            MenuItem(menu_id=m2.id, nama_bahan="Nasi Putih", gram_per_porsi=150, kalori=195, protein=3.6),
+            MenuItem(menu_id=m2.id, nama_bahan="Telur Balado", gram_per_porsi=60, kalori=140, protein=9),
+        ])
+        db.session.commit()
+
+        db.session.add(ChecklistKeamanan(
+            menu_id=m2.id, suhu_ok=True, sampel_disimpan=True, waktu_saji_ok=True,
+            kebersihan_ok=True, petugas="Siti Aminah"
+        ))
         db.session.commit()
 
 

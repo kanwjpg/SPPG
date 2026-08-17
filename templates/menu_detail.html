@@ -45,4 +45,7 @@
 
 <a href="{{ url_for('checklist_form', menu_id=menu.id) }}" class="btn btn-warning"><i class="bi bi-shield-check"></i> Isi Checklist Keamanan Pangan</a>
 <a href="{{ url_for('menu_list') }}" class="btn btn-outline-secondary">Kembali</a>
+<form method="POST" action="{{ url_for('menu_hapus', menu_id=menu.id) }}" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus menu \'{{ menu.nama_menu }}\'? Data bahan dan checklist terkait juga akan terhapus.');">
+  <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Hapus Menu</button>
+</form>
 {% endblock %}
