@@ -1,0 +1,25 @@
+body {
+  background-color: #f4f6f5;
+}
+.app-navbar {
+  background-color: #1b7a3d;
+}
+.stat-card {
+  border-radius: 12px;
+}
+.login-card {
+  border-radius: 16px;
+  border: none;
+}
+.table {
+  border-radius: 10px;
+  overflow: hidden;
+}
+.btn-success {
+  background-color: #1b7a3d;
+  border-color: #1b7a3d;
+}
+.btn-success:hover {
+  background-color: #156130;
+  border-color: #156130;
+}

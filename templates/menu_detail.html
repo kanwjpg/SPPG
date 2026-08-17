@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}{{ menu.nama_menu }} - SPPG Manager{% endblock %}
+{% block content %}
+<h3 class="fw-bold mb-1">{{ menu.nama_menu }}</h3>
+<p class="text-muted">{{ menu.tanggal.strftime('%d-%m-%Y') }} &middot; {{ menu.sekolah.nama if menu.sekolah else 'Umum' }} &middot;
+  <span class="badge {{ 'bg-success' if menu.status == 'Terdistribusi' else ('bg-warning text-dark' if menu.status == 'Siap Distribusi' else 'bg-secondary') }}">{{ menu.status }}</span>
+</p>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="text-muted small">Total Kalori per Porsi</div>
+        <div class="fs-3 fw-bold">{{ '%.0f'|format(menu.total_kalori) }} kkal</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="text-muted small">Total Protein per Porsi</div>
+        <div class="fs-3 fw-bold">{{ '%.1f'|format(menu.total_protein) }} g</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<table class="table table-bordered bg-white">
+  <thead class="table-light">
+    <tr><th>Bahan</th><th>Gram/Porsi</th><th>Kalori</th><th>Protein</th></tr>
+  </thead>
+  <tbody>
+    {% for item in menu.items %}
+    <tr>
+      <td>{{ item.nama_bahan }}</td>
+      <td>{{ item.gram_per_porsi }} g</td>
+      <td>{{ item.kalori }} kkal</td>
+      <td>{{ item.protein }} g</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" class="text-center text-muted">Belum ada bahan tercatat.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<a href="{{ url_for('checklist_form', menu_id=menu.id) }}" class="btn btn-warning"><i class="bi bi-shield-check"></i> Isi Checklist Keamanan Pangan</a>
+<a href="{{ url_for('menu_list') }}" class="btn btn-outline-secondary">Kembali</a>
+{% endblock %}

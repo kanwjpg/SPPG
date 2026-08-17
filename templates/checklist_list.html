@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Checklist Keamanan Pangan{% endblock %}
+{% block content %}
+<h3 class="fw-bold mb-1">Checklist Keamanan Pangan Pra-Distribusi</h3>
+<p class="text-muted">Setiap menu wajib lolos checklist ini sebelum boleh ditandai "Siap Distribusi" — mencegah kasus keracunan massal seperti yang terjadi di Grobogan, Januari 2026.</p>
+
+<div class="table-responsive">
+<table class="table table-hover bg-white shadow-sm rounded align-middle">
+  <thead class="table-light">
+    <tr>
+      <th>Tanggal</th>
+      <th>Menu</th>
+      <th>Status Checklist</th>
+      <th>Status Menu</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for m in menus %}
+    <tr>
+      <td>{{ m.tanggal.strftime('%d-%m-%Y') }}</td>
+      <td>{{ m.nama_menu }}</td>
+      <td>
+        {% if m.checklist and m.checklist.lolos %}
+          <span class="badge bg-success"><i class="bi bi-check-circle"></i> Lolos</span>
+        {% elif m.checklist %}
+          <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Belum Lolos</span>
+        {% else %}
+          <span class="badge bg-secondary">Belum Diisi</span>
+        {% endif %}
+      </td>
+      <td>
+        <span class="badge {{ 'bg-success' if m.status == 'Terdistribusi' else ('bg-warning text-dark' if m.status == 'Siap Distribusi' else 'bg-secondary') }}">{{ m.status }}</span>
+      </td>
+      <td class="d-flex gap-1">
+        <a href="{{ url_for('checklist_form', menu_id=m.id) }}" class="btn btn-sm btn-outline-warning">Isi/Edit Checklist</a>
+        {% if m.checklist and m.checklist.lolos and m.status != 'Terdistribusi' %}
+        <form method="POST" action="{{ url_for('checklist_distribusikan', menu_id=m.id) }}">
+          <button type="submit" class="btn btn-sm btn-success">Tandai Terdistribusi</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="text-center text-muted py-4">Belum ada menu untuk dicek.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

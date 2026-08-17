@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - SPPG Manager{% endblock %}
+{% block content %}
+<h3 class="mb-4 fw-bold">Dashboard</h3>
+<div class="row g-3">
+  <div class="col-md-3 col-6">
+    <div class="card stat-card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="text-muted small">Menu Hari Ini</div>
+        <div class="fs-2 fw-bold">{{ total_menu_hari_ini }}</div>
+        <i class="bi bi-egg-fried text-success"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="card stat-card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="text-muted small">Sekolah Terdaftar</div>
+        <div class="fs-2 fw-bold">{{ total_sekolah }}</div>
+        <i class="bi bi-building text-primary"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="card stat-card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="text-muted small">Total Penerima Manfaat</div>
+        <div class="fs-2 fw-bold">{{ total_siswa }}</div>
+        <i class="bi bi-people text-info"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="card stat-card border-0 shadow-sm {{ 'border-danger' if bahan_menipis }}">
+      <div class="card-body">
+        <div class="text-muted small">Stok Menipis</div>
+        <div class="fs-2 fw-bold {{ 'text-danger' if bahan_menipis }}">{{ bahan_menipis|length }}</div>
+        <i class="bi bi-exclamation-triangle {{ 'text-danger' if bahan_menipis else 'text-secondary' }}"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if bahan_menipis %}
+<div class="alert alert-warning mt-4">
+  <i class="bi bi-exclamation-triangle-fill"></i> <strong>Peringatan stok menipis:</strong>
+  {% for b in bahan_menipis %}
+    {{ b.nama }} ({{ b.stok_saat_ini }} {{ b.satuan }}){% if not loop.last %}, {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if menu_belum_checklist > 0 %}
+<div class="alert alert-danger mt-2">
+  <i class="bi bi-shield-exclamation"></i> Ada <strong>{{ menu_belum_checklist }}</strong> menu yang belum melewati checklist keamanan pangan. Menu tidak boleh didistribusikan sebelum checklist lolos.
+</div>
+{% endif %}
+
+<div class="row mt-3 g-3">
+  <div class="col-md-4">
+    <a href="{{ url_for('menu_tambah') }}" class="btn btn-success w-100 py-3"><i class="bi bi-plus-circle"></i> Tambah Menu Baru</a>
+  </div>
+  <div class="col-md-4">
+    <a href="{{ url_for('stok_tambah') }}" class="btn btn-primary w-100 py-3"><i class="bi bi-box-seam"></i> Tambah Bahan Baku</a>
+  </div>
+  <div class="col-md-4">
+    <a href="{{ url_for('checklist_list') }}" class="btn btn-warning w-100 py-3"><i class="bi bi-shield-check"></i> Cek Keamanan Pangan</a>
+  </div>
+</div>
+{% endblock %}
