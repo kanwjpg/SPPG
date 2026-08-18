@@ -21,15 +21,18 @@
 
     <nav class="sidebar-nav">
       {% set nav_items = [
-        ('dashboard', 'bi-grid-1x2-fill', 'Dashboard'),
-        ('menu_list', 'bi-egg-fried', 'Menu & Gizi'),
-        ('stok_list', 'bi-box-seam-fill', 'Stok Bahan'),
-        ('checklist_list', 'bi-shield-fill-check', 'Keamanan Pangan'),
-        ('petugas_list', 'bi-person-badge-fill', 'Petugas Pemeriksa'),
-        ('sekolah_list', 'bi-building-fill', 'Sekolah')
+        ('dashboard', 'bi-grid-1x2-fill', 'Dashboard', ['dashboard']),
+        ('menu_list', 'bi-egg-fried', 'Menu & Gizi', ['menu_list','menu_tambah','menu_detail','menu_hapus']),
+        ('stok_list', 'bi-box-seam-fill', 'Stok Bahan', ['stok_list','stok_tambah','stok_transaksi','stok_hapus']),
+        ('checklist_list', 'bi-shield-fill-check', 'Keamanan Pangan', ['checklist_list','checklist_form','checklist_distribusikan']),
+        ('petugas_list', 'bi-person-badge-fill', 'Petugas Pemeriksa', ['petugas_list']),
+        ('sekolah_list', 'bi-building-fill', 'Sekolah', ['sekolah_list','sekolah_tambah'])
       ] %}
-      {% for endpoint, icon, label in nav_items %}
-      <a href="{{ url_for(endpoint) }}" class="nav-pill {{ 'active' if request.endpoint == endpoint }}">
+      {% for endpoint, icon, label, group in nav_items %}
+      <a href="{{ url_for(endpoint) }}"
+      class="nav-pill {{ 'active' if request.endpoint in group }}"
+      {{ 'aria-current="page"' if request.endpoint in group }}>
+      
         <span class="nav-icon"><i class="bi {{ icon }}"></i></span>
         <span class="nav-label">{{ label }}</span>
         {% if endpoint == 'stok_list' and sidebar_stok_menipis > 0 %}
