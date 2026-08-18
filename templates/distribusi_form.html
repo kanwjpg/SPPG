@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}Jadwalkan Pengantaran - SPPG Manager{% endblock %}
+{% block content %}
+
+<span class="eyebrow">Distribusi</span>
+<div class="section-header">
+  <h3 class="mb-0">Jadwalkan Pengantaran</h3>
+  <a href="{{ url_for('distribusi_list') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
+</div>
+
+<div class="card border-0">
+  <div class="card-body">
+    <form method="POST" class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Tanggal</label>
+        <input type="date" name="tanggal" class="form-control" value="{{ hari_ini }}" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Cabang pemberangkatan</label>
+        <select name="cabang_id" class="form-select" required>
+          {% for c in cabangs %}
+          <option value="{{ c.id }}">{{ c.nama }} ({{ c.kode }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Sekolah tujuan</label>
+        <select name="sekolah_id" class="form-select" required>
+          {% for s in sekolahs %}
+          <option value="{{ s.id }}" data-siswa="{{ s.jumlah_siswa }}">{{ s.nama }} &middot; {{ s.jumlah_siswa }} siswa</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">Kendaraan</label>
+        <select name="kendaraan_id" id="kendaraanSelect" class="form-select" required>
+          {% for k in armada %}
+          <option value="{{ k.id }}" data-kapasitas="{{ k.kapasitas_porsi }}">
+            {{ k.plat }} &middot; {{ k.jenis }} (maks {{ k.kapasitas_porsi }} porsi)
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Sopir</label>
+        <select name="sopir_id" class="form-select">
+          <option value="">— Belum ditentukan —</option>
+          {% for p in sopirs %}
+          <option value="{{ p.id }}">{{ p.nama }} ({{ p.cabang.kode }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Menu yang dibawa</label>
+        <select name="menu_id" class="form-select">
+          <option value="">— Tanpa menu tertaut —</option>
+          {% for m in menus %}
+          <option value="{{ m.id }}">{{ m.nama_menu }} &middot; {{ m.tanggal.strftime('%d/%m') }}</option>
+          {% endfor %}
+        </select>
+        <div class="form-text">Menu yang belum lolos checklist keamanan tidak bisa diberangkatkan.</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">Jumlah porsi</label>
+        <input type="number" name="jumlah_porsi" id="porsiInput" class="form-control" min="1" required>
+        <div class="form-text" id="kapasitasHint"></div>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Jarak (km)</label>
+        <input type="number" step="0.1" name="jarak_km" class="form-control" min="0">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Catatan</label>
+        <input type="text" name="catatan" class="form-control" placeholder="Contoh: masuk lewat gerbang belakang">
+      </div>
+
+      <div class="col-12 d-flex gap-2">
+        <button class="btn btn-success"><i class="bi bi-check2"></i> Simpan Jadwal</button>
+        <a href="{{ url_for('distribusi_list') }}" class="btn btn-outline-secondary">Batal</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Ingatkan operator kalau porsi melebihi kapasitas kendaraan (server tetap memvalidasi ulang).
+const kendaraan = document.getElementById('kendaraanSelect');
+const porsi = document.getElementById('porsiInput');
+const hint = document.getElementById('kapasitasHint');
+
+function cekKapasitas() {
+  const maks = parseInt(kendaraan.selectedOptions[0]?.dataset.kapasitas || 0);
+  const nilai = parseInt(porsi.value || 0);
+  if (!maks) { hint.textContent = ''; return; }
+  if (nilai > maks) {
+    hint.textContent = `Melebihi kapasitas kendaraan (${maks} porsi).`;
+    hint.className = 'form-text text-danger fw-semibold';
+  } else {
+    hint.textContent = `Sisa kapasitas: ${maks - nilai} porsi.`;
+    hint.className = 'form-text';
+  }
+}
+kendaraan.addEventListener('change', cekKapasitas);
+porsi.addEventListener('input', cekKapasitas);
+cekKapasitas();
+</script>
+{% endblock %}

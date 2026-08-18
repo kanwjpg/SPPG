@@ -22,6 +22,8 @@
     <nav class="sidebar-nav">
       {% set nav_items = [
         ('dashboard', 'bi-grid-1x2-fill', 'Dashboard', ['dashboard']),
+        ('distribusi_list', 'bi-truck', 'Distribusi', ['distribusi_list','distribusi_tambah','distribusi_detail','distribusi_berangkat','distribusi_tiba','distribusi_batal']),
+        ('cabang_list', 'bi-diagram-3-fill', 'Cabang & Tim', ['cabang_list','cabang_tambah','cabang_detail','pekerja_tambah','pekerja_status','kendaraan_tambah','kendaraan_perawatan']),
         ('menu_list', 'bi-egg-fried', 'Menu & Gizi', ['menu_list','menu_tambah','menu_detail','menu_hapus']),
         ('stok_list', 'bi-box-seam-fill', 'Stok Bahan', ['stok_list','stok_tambah','stok_transaksi','stok_hapus']),
         ('checklist_list', 'bi-shield-fill-check', 'Keamanan Pangan', ['checklist_list','checklist_form','checklist_distribusikan']),
@@ -30,13 +32,14 @@
       ] %}
       {% for endpoint, icon, label, group in nav_items %}
       <a href="{{ url_for(endpoint) }}"
-      class="nav-pill {{ 'active' if request.endpoint in group }}"
-      {{ 'aria-current="page"' if request.endpoint in group }}>
-      
+         class="nav-pill {{ 'active' if request.endpoint in group }}"
+         {{ 'aria-current="page"' if request.endpoint in group }}>
         <span class="nav-icon"><i class="bi {{ icon }}"></i></span>
         <span class="nav-label">{{ label }}</span>
         {% if endpoint == 'stok_list' and sidebar_stok_menipis > 0 %}
         <span class="nav-badge">{{ sidebar_stok_menipis }}</span>
+        {% elif endpoint == 'distribusi_list' and sidebar_distribusi_jalan > 0 %}
+        <span class="nav-badge is-live">{{ sidebar_distribusi_jalan }}</span>
         {% endif %}
       </a>
       {% endfor %}
@@ -47,6 +50,10 @@
       <div class="sidebar-widget-row">
         <span>Menu hari ini</span>
         <strong>{{ sidebar_menu_hari_ini }}</strong>
+      </div>
+      <div class="sidebar-widget-row {{ 'is-live' if sidebar_distribusi_jalan > 0 }}">
+        <span>Van di jalan</span>
+        <strong>{{ sidebar_distribusi_jalan }}</strong>
       </div>
       <div class="sidebar-widget-row {{ 'is-warning' if sidebar_stok_menipis > 0 }}">
         <span>Stok menipis</span>
@@ -63,7 +70,8 @@
     </div>
   </aside>
 
-  <button class="sidebar-toggle d-lg-none" id="sidebarToggle" aria-label="Buka menu"><i class="bi bi-list"></i></button>
+  <button class="sidebar-toggle d-lg-none" id="sidebarToggle" aria-label="Buka menu" aria-expanded="false" aria-controls="sidebar"><i class="bi bi-list"></i></button>
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
   <main class="main-content">
     <div class="container-fluid px-4 py-4">
@@ -99,8 +107,23 @@
 <script>
   const toggleBtn = document.getElementById('sidebarToggle');
   const sidebar = document.getElementById('sidebar');
-  if (toggleBtn && sidebar) {
-    toggleBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
+  const backdrop = document.getElementById('sidebarBackdrop');
+  const toggleIcon = toggleBtn ? toggleBtn.querySelector('i') : null;
+
+  function setSidebar(open) {
+    sidebar.classList.toggle('open', open);
+    backdrop.classList.toggle('show', open);
+    toggleBtn.setAttribute('aria-expanded', open);
+    toggleBtn.setAttribute('aria-label', open ? 'Tutup menu' : 'Buka menu');
+    if (toggleIcon) toggleIcon.className = open ? 'bi bi-x-lg' : 'bi bi-list';
+  }
+
+  if (toggleBtn && sidebar && backdrop) {
+    toggleBtn.addEventListener('click', () => setSidebar(!sidebar.classList.contains('open')));
+    backdrop.addEventListener('click', () => setSidebar(false));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sidebar.classList.contains('open')) setSidebar(false);
+    });
   }
 </script>
 {% block scripts %}{% endblock %}
