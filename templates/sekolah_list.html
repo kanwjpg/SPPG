@@ -1,6 +1,20 @@
 {% extends 'base.html' %}
-{% block title %}Sekolah — SPPG Manager{% endblock %}{% block page_name %}Sekolah Penerima{% endblock %}
+{% block title %}Sekolah - SPPG Manager{% endblock %}
 {% block content %}
-<div class="page-head reveal"><div><span class="section-kicker">Beneficiaries</span><h1>Sekolah penerima</h1><p>Kelola daftar sekolah dan jumlah penerima manfaat yang dilayani.</p></div><a href="{{ url_for('sekolah_tambah') }}" class="btn btn-lime"><i class="bi bi-building-add"></i> Tambah sekolah</a></div>
-<div class="school-grid reveal">{% for s in sekolahs %}<div class="school-card"><div class="school-icon"><i class="bi bi-building"></i></div><div><strong>{{ s.nama }}</strong><span>{{ s.jumlah_siswa }} siswa</span></div><i class="bi bi-arrow-up-right"></i></div>{% else %}<div class="surface-card empty-state full"><i class="bi bi-building"></i><p>Belum ada sekolah terdaftar.</p></div>{% endfor %}</div>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="fw-bold mb-0">Sekolah Penerima</h3>
+  <a href="{{ url_for('sekolah_tambah') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Tambah Sekolah</a>
+</div>
+<div class="table-responsive">
+<table class="table table-hover bg-white shadow-sm rounded">
+  <thead><tr><th>Nama Sekolah</th><th>Jumlah Siswa</th></tr></thead>
+  <tbody>
+    {% for s in sekolahs %}
+    <tr><td>{{ s.nama }}</td><td>{{ s.jumlah_siswa }}</td></tr>
+    {% else %}
+    <tr><td colspan="2" class="text-center text-muted py-4">Belum ada sekolah terdaftar.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
 {% endblock %}

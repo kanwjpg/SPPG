@@ -1,34 +1,31 @@
 {% extends 'base.html' %}
-{% block title %}Masuk — SPPG Manager{% endblock %}
+{% block title %}Login - SPPG Manager{% endblock %}
 {% block content %}
-<div class="login-layout">
-  <section class="login-visual">
-    <div class="login-brand"><span class="brand-mark"><i class="bi bi-egg-fried"></i></span><strong>SPPG</strong></div>
-    <div class="login-copy">
-      <div class="section-kicker"><span></span> Operations platform</div>
-      <h1>Lebih teratur.<br><em>Lebih siap.</em><br>Lebih aman.</h1>
-      <p>Satu ruang kerja untuk mengelola menu, stok bahan, sekolah, dan keamanan pangan SPPG.</p>
+<div class="login-wrap d-flex align-items-center justify-content-center min-vh-100">
+  <div class="row justify-content-center w-100 mx-0">
+    <div class="col-11 col-sm-6 col-md-4">
+      <div class="card login-card shadow-sm">
+        <div class="card-body p-4 p-md-5">
+          <div class="text-center mb-4">
+            <span class="brand-mark d-inline-flex mb-3" style="width:52px;height:52px;font-size:1.5rem;"><i class="bi bi-egg-fried"></i></span>
+            <h4 class="mb-1">SPPG Manager</h4>
+            <p class="text-muted small mb-0">Sistem Manajemen Operasional SPPG &mdash; Program MBG</p>
+          </div>
+          <form method="POST">
+            <div class="mb-3">
+              <label class="form-label">Username</label>
+              <input type="text" name="username" class="form-control" required autofocus>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Password</label>
+              <input type="password" name="password" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-success w-100 py-2">Masuk</button>
+          </form>
+          <p class="text-center text-muted small mt-3 mb-0">Demo: admin / sppg2026</p>
+        </div>
+      </div>
     </div>
-    <div class="login-orbit"><div class="login-ring"></div><div class="login-float"><i class="bi bi-shield-check"></i><span>Food safety</span><strong>100%</strong></div></div>
-    <div class="login-footer-note"><i class="bi bi-stars"></i> Dibuat untuk alur kerja operasional yang sederhana.</div>
-  </section>
-  <section class="login-form-side">
-    <div class="login-form-wrap">
-      <div class="mobile-brand"><span class="brand-mark"><i class="bi bi-egg-fried"></i></span><strong>SPPG</strong></div>
-      <span class="section-kicker">Welcome back</span>
-      <h2>Masuk ke workspace</h2>
-      <p class="muted-lead">Gunakan akun operasional kamu untuk melanjutkan.</p>
-      <form method="POST" class="modern-form">
-        <label>Username
-          <div class="input-icon"><i class="bi bi-person"></i><input type="text" name="username" placeholder="Masukkan username" required autofocus></div>
-        </label>
-        <label>Password
-          <div class="input-icon"><i class="bi bi-lock"></i><input type="password" name="password" placeholder="Masukkan password" required><button type="button" class="password-toggle" aria-label="Tampilkan password"><i class="bi bi-eye"></i></button></div>
-        </label>
-        <button type="submit" class="btn btn-lime btn-lg w-100">Masuk ke dashboard <i class="bi bi-arrow-right"></i></button>
-      </form>
-      <div class="demo-note"><i class="bi bi-info-circle"></i><span><strong>Demo:</strong> admin / sppg2026</span></div>
-    </div>
-  </section>
+  </div>
 </div>
 {% endblock %}

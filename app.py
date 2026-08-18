@@ -116,7 +116,14 @@ def login_required(f):
 @app.context_processor
 def inject_user():
     nama = session.get('nama')
-    return dict(current_user_nama=nama)
+    sidebar_menu_hari_ini = 0
+    sidebar_stok_menipis = 0
+    if session.get('user_id'):
+        sidebar_menu_hari_ini = Menu.query.filter_by(tanggal=date.today()).count()
+        sidebar_stok_menipis = len([b for b in BahanBaku.query.all() if b.stok_saat_ini <= b.stok_minimum])
+    return dict(current_user_nama=nama,
+                sidebar_menu_hari_ini=sidebar_menu_hari_ini,
+                sidebar_stok_menipis=sidebar_stok_menipis)
 
 
 # ---------------- ROUTES: AUTH ----------------
@@ -153,26 +160,29 @@ def dashboard():
     total_siswa = db.session.query(db.func.sum(Sekolah.jumlah_siswa)).scalar() or 0
     menu_belum_checklist = Menu.query.filter(~Menu.checklist.has()).count()
 
-    total_menu = Menu.query.count()
-    total_distribusi = Menu.query.filter_by(status='Terdistribusi').count()
-    total_siap = Menu.query.filter_by(status='Siap Distribusi').count()
-    total_disiapkan = Menu.query.filter_by(status='Disiapkan').count()
+    # Data tren menu 7 hari terakhir (untuk grafik)
+    tren_labels = []
+    tren_data = []
+    for i in range(6, -1, -1):
+        tgl = date.today() - timedelta(days=i)
+        jumlah = Menu.query.filter_by(tanggal=tgl).count()
+        tren_labels.append(tgl.strftime('%d/%m'))
+        tren_data.append(jumlah)
 
-    recent_menus = Menu.query.order_by(Menu.tanggal.desc(), Menu.id.desc()).limit(6).all()
+    # Distribusi status menu (untuk grafik donat)
+    status_counts = {'Disiapkan': 0, 'Siap Distribusi': 0, 'Terdistribusi': 0}
+    for m in Menu.query.all():
+        status_counts[m.status] = status_counts.get(m.status, 0) + 1
 
-    return render_template(
-        'dashboard.html',
-        total_menu_hari_ini=total_menu_hari_ini,
-        bahan_menipis=bahan_menipis,
-        total_sekolah=total_sekolah,
-        total_siswa=total_siswa,
-        menu_belum_checklist=menu_belum_checklist,
-        total_menu=total_menu,
-        total_distribusi=total_distribusi,
-        total_siap=total_siap,
-        total_disiapkan=total_disiapkan,
-        recent_menus=recent_menus
-    )
+    return render_template('dashboard.html',
+                            total_menu_hari_ini=total_menu_hari_ini,
+                            bahan_menipis=bahan_menipis,
+                            total_sekolah=total_sekolah,
+                            total_siswa=total_siswa,
+                            menu_belum_checklist=menu_belum_checklist,
+                            tren_labels=tren_labels,
+                            tren_data=tren_data,
+                            status_counts=status_counts)
 
 
 # ---------------- ROUTES: MENU + GIZI ----------------

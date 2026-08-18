@@ -1,6 +1,30 @@
 {% extends 'base.html' %}
-{% block title %}Tambah Bahan — SPPG Manager{% endblock %}{% block page_name %}Tambah Bahan{% endblock %}
+{% block title %}Tambah Bahan Baku{% endblock %}
 {% block content %}
-<div class="page-head reveal"><div><span class="section-kicker">Inventory</span><h1>Tambah bahan baku</h1><p>Masukkan stok awal dan batas minimum untuk peringatan.</p></div></div>
-<form method="POST" class="surface-card form-card narrow reveal"><div class="form-grid single"><label>Nama bahan<input type="text" name="nama" required placeholder="Contoh: Beras"></label><label>Satuan<select name="satuan"><option value="kg">kg</option><option value="liter">liter</option><option value="butir">butir</option><option value="pcs">pcs</option></select></label><label>Stok awal<input type="number" step="0.1" min="0" name="stok_awal" required placeholder="0"></label><label>Stok minimum<input type="number" step="0.1" min="0" name="stok_minimum" required placeholder="Batas peringatan"></label></div><div class="form-actions"><a href="{{ url_for('stok_list') }}" class="btn btn-ghost">Batal</a><button class="btn btn-lime"><i class="bi bi-check2"></i> Simpan bahan</button></div></form>
+<h3 class="fw-bold mb-3">Tambah Bahan Baku</h3>
+<form method="POST" class="card shadow-sm p-4" style="max-width:500px">
+  <div class="mb-3">
+    <label class="form-label">Nama Bahan</label>
+    <input type="text" name="nama" class="form-control" required placeholder="Contoh: Beras">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Satuan</label>
+    <select name="satuan" class="form-select">
+      <option value="kg">kg</option>
+      <option value="liter">liter</option>
+      <option value="butir">butir</option>
+      <option value="pcs">pcs</option>
+    </select>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Stok Awal</label>
+    <input type="number" step="0.1" name="stok_awal" class="form-control" required>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Stok Minimum (batas peringatan)</label>
+    <input type="number" step="0.1" name="stok_minimum" class="form-control" required>
+  </div>
+  <button type="submit" class="btn btn-primary">Simpan</button>
+  <a href="{{ url_for('stok_list') }}" class="btn btn-outline-secondary">Batal</a>
+</form>
 {% endblock %}

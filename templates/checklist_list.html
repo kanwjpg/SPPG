@@ -1,10 +1,50 @@
 {% extends 'base.html' %}
-{% block title %}Keamanan Pangan — SPPG Manager{% endblock %}{% block page_name %}Keamanan Pangan{% endblock %}
+{% block title %}Checklist Keamanan Pangan{% endblock %}
 {% block content %}
-<div class="page-head reveal"><div><span class="section-kicker">Food safety</span><h1>Checklist keamanan pangan</h1><p>Verifikasi setiap menu sebelum diberi status siap distribusi.</p></div><div class="head-badge"><i class="bi bi-shield-check"></i> Pra-distribusi</div></div>
-<div class="surface-card reveal"><div class="toolbar"><div class="search-box"><i class="bi bi-search"></i><input id="tableSearch" type="search" placeholder="Cari menu..."></div><span class="result-count">{{ menus|length }} menu perlu dipantau</span></div>
-<div class="table-responsive"><table class="table-modern"><thead><tr><th>Tanggal</th><th>Menu</th><th>Checklist</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="searchTable">
-{% for m in menus %}<tr><td>{{ m.tanggal.strftime('%d %b %Y') }}</td><td><a class="table-title" href="{{ url_for('menu_detail', menu_id=m.id) }}"><span class="row-icon green"><i class="bi bi-egg-fried"></i></span>{{ m.nama_menu }}</a></td><td>{% if m.checklist and m.checklist.lolos %}<span class="status-badge success"><i class="bi bi-check-circle"></i> Lolos</span>{% elif m.checklist %}<span class="status-badge danger"><i class="bi bi-x-circle"></i> Belum lolos</span>{% else %}<span class="status-badge muted">Belum diisi</span>{% endif %}</td><td><span class="status-badge {{ 'success' if m.status == 'Terdistribusi' else ('lime' if m.status == 'Siap Distribusi' else 'muted') }}">{{ m.status }}</span></td><td><div class="table-actions"><a href="{{ url_for('checklist_form', menu_id=m.id) }}" class="btn btn-soft"><i class="bi bi-pencil"></i> Isi / edit</a>{% if m.checklist and m.checklist.lolos and m.status != 'Terdistribusi' %}<form method="POST" action="{{ url_for('checklist_distribusikan', menu_id=m.id) }}"><button class="btn btn-dark"><i class="bi bi-truck"></i> Distribusikan</button></form>{% endif %}</div></td></tr>
-{% else %}<tr><td colspan="5"><div class="empty-state"><i class="bi bi-shield-check"></i><p>Belum ada menu untuk dicek.</p></div></td></tr>{% endfor %}
-</tbody></table></div></div>
+<h3 class="fw-bold mb-1">Checklist Keamanan Pangan Pra-Distribusi</h3>
+<p class="text-muted">Setiap menu wajib lolos checklist ini sebelum boleh ditandai "Siap Distribusi" — mencegah kasus keracunan massal seperti yang terjadi di Grobogan, Januari 2026.</p>
+
+<div class="table-responsive">
+<table class="table table-hover bg-white shadow-sm rounded align-middle">
+  <thead>
+    <tr>
+      <th>Tanggal</th>
+      <th>Menu</th>
+      <th>Status Checklist</th>
+      <th>Status Menu</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for m in menus %}
+    <tr>
+      <td>{{ m.tanggal.strftime('%d-%m-%Y') }}</td>
+      <td>{{ m.nama_menu }}</td>
+      <td>
+        {% if m.checklist and m.checklist.lolos %}
+          <span class="badge bg-success"><i class="bi bi-check-circle"></i> Lolos</span>
+        {% elif m.checklist %}
+          <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Belum Lolos</span>
+        {% else %}
+          <span class="badge bg-secondary">Belum Diisi</span>
+        {% endif %}
+      </td>
+      <td>
+        <span class="badge {{ 'bg-success' if m.status == 'Terdistribusi' else ('bg-warning text-dark' if m.status == 'Siap Distribusi' else 'bg-secondary') }}">{{ m.status }}</span>
+      </td>
+      <td class="d-flex gap-1">
+        <a href="{{ url_for('checklist_form', menu_id=m.id) }}" class="btn btn-sm btn-outline-warning">Isi/Edit Checklist</a>
+        {% if m.checklist and m.checklist.lolos and m.status != 'Terdistribusi' %}
+        <form method="POST" action="{{ url_for('checklist_distribusikan', menu_id=m.id) }}">
+          <button type="submit" class="btn btn-sm btn-success">Tandai Terdistribusi</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="text-center text-muted py-4">Belum ada menu untuk dicek.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
 {% endblock %}

@@ -1,9 +1,51 @@
 {% extends 'base.html' %}
-{% block title %}{{ menu.nama_menu }} — SPPG Manager{% endblock %}{% block page_name %}Detail Menu{% endblock %}
+{% block title %}{{ menu.nama_menu }} - SPPG Manager{% endblock %}
 {% block content %}
-<div class="page-head reveal"><div><a href="{{ url_for('menu_list') }}" class="back-link"><i class="bi bi-arrow-left"></i> Kembali ke menu</a><span class="section-kicker mt-3">Menu detail</span><h1>{{ menu.nama_menu }}</h1><p>{{ menu.tanggal.strftime('%d %B %Y') }} · {{ menu.sekolah.nama if menu.sekolah else 'Umum' }}</p></div><span class="status-badge large {{ 'success' if menu.status == 'Terdistribusi' else ('lime' if menu.status == 'Siap Distribusi' else 'muted') }}">{{ menu.status }}</span></div>
-<div class="metric-grid reveal"><div class="metric-card"><span>Kalori / porsi</span><strong>{{ '%.0f'|format(menu.total_kalori) }}</strong><small>kkal</small><i class="bi bi-fire"></i></div><div class="metric-card"><span>Protein / porsi</span><strong>{{ '%.1f'|format(menu.total_protein) }}</strong><small>gram</small><i class="bi bi-activity"></i></div><div class="metric-card"><span>Komposisi</span><strong>{{ menu.items|length }}</strong><small>bahan</small><i class="bi bi-list-check"></i></div></div>
-<div class="surface-card reveal"><div class="card-heading"><div><span class="section-kicker">Nutrition breakdown</span><h2>Komposisi bahan</h2></div><a href="{{ url_for('checklist_form', menu_id=menu.id) }}" class="btn btn-lime"><i class="bi bi-shield-check"></i> Checklist</a></div>
-<div class="table-responsive"><table class="table-modern"><thead><tr><th>Bahan</th><th>Gram / porsi</th><th>Kalori</th><th>Protein</th></tr></thead><tbody>{% for item in menu.items %}<tr><td class="table-title"><span class="row-icon green"><i class="bi bi-leaf"></i></span>{{ item.nama_bahan }}</td><td>{{ item.gram_per_porsi }} g</td><td>{{ item.kalori }} kkal</td><td>{{ item.protein }} g</td></tr>{% else %}<tr><td colspan="4"><div class="empty-state"><i class="bi bi-list"></i><p>Belum ada bahan.</p></div></td></tr>{% endfor %}</tbody></table></div></div>
-<div class="danger-zone reveal"><div><strong>Hapus menu</strong><span>Data bahan dan checklist terkait juga akan dihapus.</span></div><form method="POST" action="{{ url_for('menu_hapus', menu_id=menu.id) }}" onsubmit="return confirm('Yakin ingin menghapus menu ini?');"><button class="btn btn-outline-danger"><i class="bi bi-trash"></i> Hapus</button></form></div>
+<h3 class="fw-bold mb-1">{{ menu.nama_menu }}</h3>
+<p class="text-muted">{{ menu.tanggal.strftime('%d-%m-%Y') }} &middot; {{ menu.sekolah.nama if menu.sekolah else 'Umum' }} &middot;
+  <span class="badge {{ 'bg-success' if menu.status == 'Terdistribusi' else ('bg-warning text-dark' if menu.status == 'Siap Distribusi' else 'bg-secondary') }}">{{ menu.status }}</span>
+</p>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="text-muted small">Total Kalori per Porsi</div>
+        <div class="fs-3 fw-bold">{{ '%.0f'|format(menu.total_kalori) }} kkal</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="text-muted small">Total Protein per Porsi</div>
+        <div class="fs-3 fw-bold">{{ '%.1f'|format(menu.total_protein) }} g</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<table class="table table-bordered bg-white">
+  <thead>
+    <tr><th>Bahan</th><th>Gram/Porsi</th><th>Kalori</th><th>Protein</th></tr>
+  </thead>
+  <tbody>
+    {% for item in menu.items %}
+    <tr>
+      <td>{{ item.nama_bahan }}</td>
+      <td>{{ item.gram_per_porsi }} g</td>
+      <td>{{ item.kalori }} kkal</td>
+      <td>{{ item.protein }} g</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" class="text-center text-muted">Belum ada bahan tercatat.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<a href="{{ url_for('checklist_form', menu_id=menu.id) }}" class="btn btn-warning"><i class="bi bi-shield-check"></i> Isi Checklist Keamanan Pangan</a>
+<a href="{{ url_for('menu_list') }}" class="btn btn-outline-secondary">Kembali</a>
+<form method="POST" action="{{ url_for('menu_hapus', menu_id=menu.id) }}" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus menu \'{{ menu.nama_menu }}\'? Data bahan dan checklist terkait juga akan terhapus.');">
+  <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Hapus Menu</button>
+</form>
 {% endblock %}
