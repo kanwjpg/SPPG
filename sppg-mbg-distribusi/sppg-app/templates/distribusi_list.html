@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% block title %}Distribusi - SPPG Manager{% endblock %}
+{% block content %}
+
+<span class="eyebrow">Pusat Kendali Distribusi</span>
+<div class="section-header">
+  <div>
+    <h3 class="mb-1">Distribusi Makanan Bergizi</h3>
+    <p class="text-muted mb-0 small">Pantau armada yang sedang mengantar porsi ke sekolah secara langsung.</p>
+  </div>
+  <a href="{{ url_for('distribusi_tambah') }}" class="btn btn-success"><i class="bi bi-plus-circle"></i> Jadwalkan Pengantaran</a>
+</div>
+
+<!-- Ringkasan -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3 col-6">
+    <div class="card stat-card border-0 p-1">
+      <div class="stat-glow"></div>
+      <div class="card-body">
+        <div class="stat-icon-wrap" style="background:#FDF1D9;color:#B7791F;"><i class="bi bi-truck"></i></div>
+        <div class="text-muted small">Sedang di Jalan</div>
+        <div class="fs-2 fw-bold display-font">{{ ringkasan.berjalan }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="card stat-card border-0 p-1">
+      <div class="stat-glow"></div>
+      <div class="card-body">
+        <div class="stat-icon-wrap" style="background:#E4F0FF;color:#2B6CB0;"><i class="bi bi-calendar-check-fill"></i></div>
+        <div class="text-muted small">Dijadwalkan</div>
+        <div class="fs-2 fw-bold display-font">{{ ringkasan.dijadwalkan }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="card stat-card border-0 p-1">
+      <div class="stat-glow"></div>
+      <div class="card-body">
+        <div class="stat-icon-wrap" style="background:#E8FBD1;color:#5A9216;"><i class="bi bi-check2-circle"></i></div>
+        <div class="text-muted small">Selesai Hari Ini</div>
+        <div class="fs-2 fw-bold display-font">{{ ringkasan.selesai_hari_ini }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="card stat-card border-0 p-1">
+      <div class="stat-glow"></div>
+      <div class="card-body">
+        <div class="stat-icon-wrap" style="background:#E8FBD1;color:#5A9216;"><i class="bi bi-basket2-fill"></i></div>
+        <div class="text-muted small">Porsi Tersalur</div>
+        <div class="fs-2 fw-bold display-font">{{ ringkasan.porsi_terkirim }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Panel live -->
+<div class="card border-0 mb-4 live-panel">
+  <div class="card-body">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h6 class="fw-bold mb-0"><span class="live-dot"></span> Perjalanan Berlangsung</h6>
+      <span class="small text-muted" id="liveClock">Diperbarui otomatis tiap 15 detik</span>
+    </div>
+    <div id="liveList" class="row g-3">
+      {% for d in perjalanan if d.status == 'Berjalan' %}
+      <div class="col-lg-6">
+        <div class="trip-card" data-trip="{{ d.id }}">
+          <div class="trip-card-head">
+            <span class="trip-van"><i class="bi bi-truck"></i></span>
+            <div class="flex-grow-1">
+              <div class="trip-plate">{{ d.kendaraan.plat }}</div>
+              <div class="trip-sub">{{ d.kendaraan.model or d.kendaraan.jenis }} &middot; {{ d.cabang.nama }}</div>
+            </div>
+            <span class="badge bg-warning-subtle text-warning-emphasis trip-eta">{{ d.sisa_menit }} mnt lagi</span>
+          </div>
+          <div class="trip-route">
+            <span class="route-node"></span>
+            <span class="route-line"><span class="route-progress" style="width: {{ d.progres }}%;"></span></span>
+            <span class="route-node is-end"></span>
+          </div>
+          <div class="d-flex justify-content-between small text-muted mb-2">
+            <span>{{ d.cabang.kode }}</span>
+            <span>{{ d.sekolah.nama }}</span>
+          </div>
+          <div class="trip-meta">
+            <div><span class="text-muted">Sopir</span><strong>{{ d.sopir.nama if d.sopir else '-' }}</strong></div>
+            <div><span class="text-muted">Porsi</span><strong>{{ d.jumlah_porsi }}</strong></div>
+            <div><span class="text-muted">Jarak</span><strong>{{ d.jarak_km }} km</strong></div>
+          </div>
+          <div class="d-flex gap-2 mt-3">
+            <a href="{{ url_for('distribusi_detail', distribusi_id=d.id) }}" class="btn btn-sm btn-outline-secondary flex-grow-1">Detail</a>
+            <form method="POST" action="{{ url_for('distribusi_tiba', distribusi_id=d.id) }}" class="flex-grow-1">
+              <button class="btn btn-sm btn-success w-100"><i class="bi bi-check2"></i> Tandai Tiba</button>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="col-12">
+        <div class="empty-state">
+          <i class="bi bi-truck"></i>
+          <p class="mb-2">Belum ada van yang berangkat saat ini.</p>
+          <a href="{{ url_for('distribusi_tambah') }}" class="btn btn-sm btn-success">Jadwalkan pengantaran</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Status armada -->
+<div class="card border-0 mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">Status Armada</h6>
+    <div class="fleet-grid">
+      {% for k in armada %}
+      <div class="fleet-chip status-{{ k.status|replace(' ', '-')|lower }}">
+        <i class="bi {{ 'bi-truck' if k.jenis != 'Motor Box' else 'bi-bicycle' }}"></i>
+        <div>
+          <strong>{{ k.plat }}</strong>
+          <span>{{ k.status }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Tabel semua perjalanan -->
+<div class="card border-0">
+  <div class="card-body">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+      <h6 class="fw-bold mb-0">Riwayat & Jadwal Pengantaran</h6>
+      <div class="filter-pills">
+        {% for f in ['semua', 'Berjalan', 'Dijadwalkan', 'Selesai', 'Batal'] %}
+        <a href="{{ url_for('distribusi_list', status=f) }}"
+           class="filter-pill {{ 'active' if filter_status == f }}">{{ 'Semua' if f == 'semua' else f }}</a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Kode</th><th>Kendaraan</th><th>Cabang</th><th>Tujuan</th>
+            <th class="text-end">Porsi</th><th>Status</th><th class="text-end">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in perjalanan %}
+          <tr>
+            <td>
+              <a href="{{ url_for('distribusi_detail', distribusi_id=d.id) }}" class="fw-semibold text-decoration-none">{{ d.kode }}</a>
+              <div class="small text-muted">{{ d.tanggal.strftime('%d %b %Y') }}</div>
+            </td>
+            <td>
+              <div class="fw-semibold">{{ d.kendaraan.plat }}</div>
+              <div class="small text-muted">{{ d.sopir.nama if d.sopir else 'Sopir belum ditugaskan' }}</div>
+            </td>
+            <td><span class="badge bg-light text-dark border">{{ d.cabang.kode }}</span></td>
+            <td>{{ d.sekolah.nama }}</td>
+            <td class="text-end fw-semibold">{{ d.jumlah_porsi }}</td>
+            <td><span class="badge bg-{{ d.warna_status }}-subtle text-{{ d.warna_status }}-emphasis">{{ d.status }}</span></td>
+            <td class="text-end">
+              <div class="d-flex gap-1 justify-content-end">
+                {% if d.status == 'Dijadwalkan' %}
+                <form method="POST" action="{{ url_for('distribusi_berangkat', distribusi_id=d.id) }}">
+                  <button class="btn btn-sm btn-success"><i class="bi bi-play-fill"></i> Berangkat</button>
+                </form>
+                <form method="POST" action="{{ url_for('distribusi_batal', distribusi_id=d.id) }}"
+                      onsubmit="return confirm('Batalkan {{ d.kode }}?')">
+                  <button class="btn btn-sm btn-outline-danger btn-icon" title="Batalkan"><i class="bi bi-x-lg"></i></button>
+                </form>
+                {% elif d.status == 'Berjalan' %}
+                <form method="POST" action="{{ url_for('distribusi_tiba', distribusi_id=d.id) }}">
+                  <button class="btn btn-sm btn-success"><i class="bi bi-check2"></i> Tiba</button>
+                </form>
+                {% else %}
+                <a href="{{ url_for('distribusi_detail', distribusi_id=d.id) }}" class="btn btn-sm btn-outline-secondary btn-icon" title="Lihat detail"><i class="bi bi-eye"></i></a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="text-center text-muted py-4">Belum ada data pada filter ini.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Refresh progres perjalanan tanpa reload halaman.
+async function refreshLive() {
+  try {
+    const res = await fetch("{{ url_for('api_distribusi_live') }}");
+    if (!res.ok) return;
+    const data = await res.json();
+    data.perjalanan.forEach(t => {
+      const bar = document.querySelector(`[data-trip="${t.id}"] .route-progress`);
+      const eta = document.querySelector(`[data-trip="${t.id}"] .trip-eta`);
+      if (bar) bar.style.width = t.progres + '%';
+      if (eta) eta.textContent = t.sisa_menit + ' mnt lagi';
+    });
+    const clock = document.getElementById('liveClock');
+    if (clock) clock.textContent = 'Diperbarui ' + new Date().toLocaleTimeString('id-ID');
+  } catch (e) { /* offline: biarkan tampilan terakhir */ }
+}
+setInterval(refreshLive, 15000);
+</script>
+{% endblock %}

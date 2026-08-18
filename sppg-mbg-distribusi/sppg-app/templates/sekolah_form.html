@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Tambah Sekolah{% endblock %}
+{% block content %}
+<h3 class="fw-bold mb-3">Tambah Sekolah</h3>
+<form method="POST" class="card shadow-sm p-4" style="max-width:500px">
+  <div class="mb-3">
+    <label class="form-label">Nama Sekolah</label>
+    <input type="text" name="nama" class="form-control" required>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Jumlah Siswa</label>
+    <input type="number" name="jumlah_siswa" class="form-control" required>
+  </div>
+  <button type="submit" class="btn btn-primary">Simpan</button>
+  <a href="{{ url_for('sekolah_list') }}" class="btn btn-outline-secondary">Batal</a>
+</form>
+{% endblock %}
