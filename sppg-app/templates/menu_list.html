@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}Menu & Gizi - SPPG Manager{% endblock %}
+{% block content %}
+<span class="eyebrow">Menu & Gizi</span>
+<div class="section-header">
+  <h3 class="mb-0">Menu &amp; Kecukupan Gizi</h3>
+  <a href="{{ url_for('menu_tambah') }}" class="btn btn-success"><i class="bi bi-plus-circle"></i> Tambah Menu</a>
+</div>
+
+<div class="search-box mb-3">
+  <i class="bi bi-search"></i>
+  <input type="text" id="menuSearch" class="form-control" placeholder="Cari nama menu atau sekolah...">
+</div>
+
+<div class="table-responsive">
+<table class="table table-hover bg-white shadow-sm rounded" id="menuTable">
+  <thead>
+    <tr>
+      <th>Tanggal</th>
+      <th>Nama Menu</th>
+      <th>Sekolah</th>
+      <th>Total Kalori</th>
+      <th>Total Protein</th>
+      <th>Status</th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for m in menus %}
+    <tr>
+      <td>{{ m.tanggal.strftime('%d-%m-%Y') }}</td>
+      <td class="fw-semibold">{{ m.nama_menu }}</td>
+      <td>{{ m.sekolah.nama if m.sekolah else '-' }}</td>
+      <td>{{ '%.0f'|format(m.total_kalori) }} kkal</td>
+      <td>{{ '%.1f'|format(m.total_protein) }} g</td>
+      <td>
+        <span class="badge {{ 'bg-success' if m.status == 'Terdistribusi' else ('bg-warning text-dark' if m.status == 'Siap Distribusi' else 'bg-secondary') }}">{{ m.status }}</span>
+      </td>
+      <td><a href="{{ url_for('menu_detail', menu_id=m.id) }}" class="btn btn-icon btn-outline-secondary" title="Detail"><i class="bi bi-eye"></i></a></td>
+      <td>
+        <form method="POST" action="{{ url_for('menu_hapus', menu_id=m.id) }}" onsubmit="return confirm('Yakin ingin menghapus menu \'{{ m.nama_menu }}\'?');">
+          <button type="submit" class="btn btn-icon btn-outline-danger" title="Hapus"><i class="bi bi-trash"></i></button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8" class="text-center text-muted py-4">Belum ada menu. Klik "Tambah Menu" untuk memulai.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('menuSearch').addEventListener('input', function () {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('#menuTable tbody tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% block title %}{{ c.nama }} - SPPG Manager{% endblock %}
+{% block content %}
+
+<span class="eyebrow">{{ c.kode }}</span>
+<div class="section-header">
+  <div>
+    <h3 class="mb-1">{{ c.nama }}</h3>
+    <p class="text-muted mb-0 small">
+      {{ c.alamat or 'Alamat belum diisi' }}
+      {% if c.kepala %} &middot; Kepala dapur: {{ c.kepala }}{% endif %}
+      {% if c.telepon %} &middot; {{ c.telepon }}{% endif %}
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    <span class="status-tag status-{{ c.status_operasional|lower }} align-self-center">
+      <span class="status-dot"></span>{{ c.status_operasional }}
+    </span>
+    <a href="{{ url_for('cabang_list') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3 col-6">
+    <div class="card stat-card border-0 p-1"><div class="stat-glow"></div><div class="card-body">
+      <div class="stat-icon-wrap" style="background:#E8FBD1;color:#5A9216;"><i class="bi bi-basket2-fill"></i></div>
+      <div class="text-muted small">Porsi Hari Ini</div>
+      <div class="fs-2 fw-bold display-font">{{ c.porsi_hari_ini }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="card stat-card border-0 p-1"><div class="stat-glow"></div><div class="card-body">
+      <div class="stat-icon-wrap" style="background:#E4F0FF;color:#2B6CB0;"><i class="bi bi-people-fill"></i></div>
+      <div class="text-muted small">Pekerja Bertugas</div>
+      <div class="fs-2 fw-bold display-font">{{ c.pekerja_bertugas|length }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="card stat-card border-0 p-1"><div class="stat-glow"></div><div class="card-body">
+      <div class="stat-icon-wrap" style="background:#FDF1D9;color:#B7791F;"><i class="bi bi-truck"></i></div>
+      <div class="text-muted small">Van di Jalan</div>
+      <div class="fs-2 fw-bold display-font">{{ c.distribusi_berjalan|length }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-3 col-6">
+    <div class="card stat-card border-0 p-1"><div class="stat-glow"></div><div class="card-body">
+      <div class="stat-icon-wrap" style="background:#EFEAFD;color:#5B45B0;"><i class="bi bi-speedometer2"></i></div>
+      <div class="text-muted small">Beban Kapasitas</div>
+      <div class="fs-2 fw-bold display-font">{{ c.beban_kapasitas }}%</div>
+    </div></div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- Pekerja -->
+  <div class="col-lg-7">
+    <div class="card border-0 h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h6 class="fw-bold mb-0">Tim Cabang ({{ c.pekerja|length }})</h6>
+          <button class="btn btn-sm btn-success" data-bs-toggle="collapse" data-bs-target="#formPekerja">
+            <i class="bi bi-person-plus"></i> Tambah Pekerja
+          </button>
+        </div>
+
+        <div class="collapse mb-3" id="formPekerja">
+          <form method="POST" action="{{ url_for('pekerja_tambah', cabang_id=c.id) }}" class="row g-2 p-3 rounded" style="background:#F8FAF4;">
+            <div class="col-md-4">
+              <input type="text" name="nama" class="form-control form-control-sm" placeholder="Nama lengkap" required>
+            </div>
+            <div class="col-md-3">
+              <select name="peran" class="form-select form-select-sm">
+                <option>Juru Masak</option><option>Sopir</option><option>QC Gizi</option>
+                <option>Kepala Dapur</option><option>Admin</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <select name="shift" class="form-select form-select-sm"><option>Pagi</option><option>Siang</option></select>
+            </div>
+            <div class="col-md-2">
+              <input type="text" name="telepon" class="form-control form-control-sm" placeholder="No. HP">
+            </div>
+            <div class="col-md-1">
+              <button class="btn btn-sm btn-success w-100"><i class="bi bi-check2"></i></button>
+            </div>
+          </form>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead><tr><th>Nama</th><th>Peran</th><th>Shift</th><th>Status</th><th class="text-end">Aksi</th></tr></thead>
+            <tbody>
+              {% for p in c.pekerja %}
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="worker-avatar sm">{{ p.inisial }}</span>
+                    <div>
+                      <div class="fw-semibold">{{ p.nama }}</div>
+                      {% if p.telepon %}<div class="small text-muted">{{ p.telepon }}</div>{% endif %}
+                    </div>
+                  </div>
+                </td>
+                <td><span class="badge bg-light text-dark border">{{ p.peran }}</span></td>
+                <td class="small">{{ p.shift }}</td>
+                <td>
+                  {% if p.bertugas %}
+                  <span class="badge bg-success-subtle text-success-emphasis">Bertugas</span>
+                  {% else %}
+                  <span class="badge bg-secondary-subtle text-secondary-emphasis">Libur</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <form method="POST" action="{{ url_for('pekerja_status', pekerja_id=p.id) }}">
+                    <button class="btn btn-sm btn-outline-secondary">
+                      {{ 'Tandai libur' if p.bertugas else 'Tandai bertugas' }}
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="5" class="text-center text-muted py-4">Belum ada pekerja di cabang ini.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Armada -->
+  <div class="col-lg-5">
+    <div class="card border-0 h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h6 class="fw-bold mb-0">Armada ({{ c.kendaraan|length }})</h6>
+          <button class="btn btn-sm btn-success" data-bs-toggle="collapse" data-bs-target="#formKendaraan">
+            <i class="bi bi-plus"></i> Tambah
+          </button>
+        </div>
+
+        <div class="collapse mb-3" id="formKendaraan">
+          <form method="POST" action="{{ url_for('kendaraan_tambah', cabang_id=c.id) }}" class="row g-2 p-3 rounded" style="background:#F8FAF4;">
+            <div class="col-6"><input type="text" name="plat" class="form-control form-control-sm" placeholder="Plat nomor" required></div>
+            <div class="col-6">
+              <select name="jenis" class="form-select form-select-sm"><option>Van</option><option>Pikap</option><option>Motor Box</option></select>
+            </div>
+            <div class="col-7"><input type="text" name="model" class="form-control form-control-sm" placeholder="Model kendaraan"></div>
+            <div class="col-5"><input type="number" name="kapasitas_porsi" class="form-control form-control-sm" placeholder="Kapasitas"></div>
+            <div class="col-12"><button class="btn btn-sm btn-success w-100">Simpan kendaraan</button></div>
+          </form>
+        </div>
+
+        {% for k in c.kendaraan %}
+        <div class="fleet-row">
+          <span class="fleet-icon status-{{ k.status|replace(' ', '-')|lower }}"><i class="bi bi-truck"></i></span>
+          <div class="flex-grow-1">
+            <div class="fw-semibold">{{ k.plat }}</div>
+            <div class="small text-muted">{{ k.model or k.jenis }} &middot; {{ k.kapasitas_porsi }} porsi</div>
+            {% if k.perjalanan_aktif %}
+            <div class="small text-warning-emphasis">
+              <i class="bi bi-geo-alt-fill"></i> Menuju {{ k.perjalanan_aktif.sekolah.nama }}
+            </div>
+            {% endif %}
+          </div>
+          <div class="text-end">
+            <span class="badge bg-light text-dark border mb-1">{{ k.status }}</span>
+            {% if not k.perjalanan_aktif %}
+            <form method="POST" action="{{ url_for('kendaraan_perawatan', kendaraan_id=k.id) }}">
+              <button class="btn btn-sm btn-link p-0 small text-decoration-none">
+                {{ 'Selesai dirawat' if k.status == 'Perawatan' else 'Masuk perawatan' }}
+              </button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+        {% else %}
+        <p class="text-muted small mb-0">Belum ada kendaraan di cabang ini.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Distribusi cabang -->
+<div class="card border-0">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">Pengantaran Terakhir dari Cabang Ini</h6>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead><tr><th>Kode</th><th>Tujuan</th><th>Kendaraan</th><th class="text-end">Porsi</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for d in perjalanan %}
+          <tr>
+            <td><a href="{{ url_for('distribusi_detail', distribusi_id=d.id) }}" class="text-decoration-none fw-semibold">{{ d.kode }}</a></td>
+            <td>{{ d.sekolah.nama }}</td>
+            <td class="small">{{ d.kendaraan.plat }}</td>
+            <td class="text-end">{{ d.jumlah_porsi }}</td>
+            <td><span class="badge bg-{{ d.warna_status }}-subtle text-{{ d.warna_status }}-emphasis">{{ d.status }}</span></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="text-center text-muted py-4">Belum ada pengantaran dari cabang ini.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
