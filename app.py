@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, date, timedelta
+from math import radians, sin, cos, asin, sqrt
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -33,6 +34,14 @@ class Sekolah(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nama = db.Column(db.String(150), nullable=False)
     jumlah_siswa = db.Column(db.Integer, nullable=False, default=0)
+    alamat = db.Column(db.String(250))
+    latitude = db.Column(db.Float)
+    longitude = db.Column(db.Float)
+    catatan = db.Column(db.Text)
+
+    @property
+    def punya_lokasi(self):
+        return self.latitude is not None and self.longitude is not None
 
 
 class Menu(db.Model):
@@ -111,7 +120,13 @@ class Cabang(db.Model):
     kapasitas_porsi = db.Column(db.Integer, nullable=False, default=0)
     kepala = db.Column(db.String(120))
     telepon = db.Column(db.String(30))
+    latitude = db.Column(db.Float)
+    longitude = db.Column(db.Float)
     aktif = db.Column(db.Boolean, default=True)
+
+    @property
+    def punya_lokasi(self):
+        return self.latitude is not None and self.longitude is not None
 
     pekerja = db.relationship('Pekerja', backref='cabang', cascade='all, delete-orphan')
     kendaraan = db.relationship('Kendaraan', backref='cabang', cascade='all, delete-orphan')
@@ -218,6 +233,34 @@ class Distribusi(db.Model):
     @property
     def sisa_menit(self):
         return max(0, self.ESTIMASI_MENIT - self.menit_berjalan)
+
+    @property
+    def bisa_dilacak(self):
+        return bool(self.cabang and self.cabang.punya_lokasi
+                    and self.sekolah and self.sekolah.punya_lokasi)
+
+    @property
+    def posisi(self):
+        """Perkiraan posisi van sekarang: titik antara cabang dan sekolah,
+        digeser sesuai progres waktu. Bukan GPS — interpolasi linear."""
+        if not self.bisa_dilacak:
+            return None
+        rasio = self.progres / 100
+        return {
+            'lat': self.cabang.latitude + (self.sekolah.latitude - self.cabang.latitude) * rasio,
+            'lng': self.cabang.longitude + (self.sekolah.longitude - self.cabang.longitude) * rasio,
+        }
+
+    @property
+    def jarak_hitung(self):
+        """Jarak garis lurus cabang-sekolah (haversine), dibulatkan 1 desimal."""
+        if not self.bisa_dilacak:
+            return self.jarak_km or 0
+        R = 6371.0
+        lat1, lon1 = radians(self.cabang.latitude), radians(self.cabang.longitude)
+        lat2, lon2 = radians(self.sekolah.latitude), radians(self.sekolah.longitude)
+        a = sin((lat2 - lat1) / 2) ** 2 + cos(lat1) * cos(lat2) * sin((lon2 - lon1) / 2) ** 2
+        return round(R * 2 * asin(sqrt(a)), 1)
 
     @property
     def warna_status(self):
@@ -585,11 +628,17 @@ def distribusi_tambah():
             sekolah_id=int(request.form['sekolah_id']),
             menu_id=int(request.form['menu_id']) if request.form.get('menu_id') else None,
             jumlah_porsi=jumlah_porsi,
-            jarak_km=float(request.form.get('jarak_km') or 0),
+            jarak_km=float(request.form.get('jarak_km') or 0),  # 0 = dihitung otomatis dari koordinat
             catatan=request.form.get('catatan', '').strip(),
         )
         db.session.add(d)
         db.session.commit()
+
+        # Kalau jarak dikosongkan, hitung otomatis dari koordinat cabang & sekolah.
+        if not d.jarak_km and d.bisa_dilacak:
+            d.jarak_km = d.jarak_hitung
+            db.session.commit()
+
         flash(f'Jadwal distribusi {d.kode} dibuat.', 'success')
         return redirect(url_for('distribusi_list'))
 
@@ -704,6 +753,8 @@ def cabang_tambah():
             kapasitas_porsi=int(request.form.get('kapasitas_porsi') or 0),
             kepala=request.form.get('kepala', '').strip(),
             telepon=request.form.get('telepon', '').strip(),
+            latitude=float(request.form['latitude']) if request.form.get('latitude') else None,
+            longitude=float(request.form['longitude']) if request.form.get('longitude') else None,
         )
         db.session.add(c)
         db.session.commit()
@@ -796,12 +847,85 @@ def sekolah_list():
 def sekolah_tambah():
     if request.method == 'POST':
         nama = request.form.get('nama', '').strip()
-        jumlah_siswa = int(request.form.get('jumlah_siswa') or 0)
-        db.session.add(Sekolah(nama=nama, jumlah_siswa=jumlah_siswa))
+        lat = request.form.get('latitude', '').strip()
+        lng = request.form.get('longitude', '').strip()
+        s = Sekolah(
+            nama=nama,
+            jumlah_siswa=int(request.form.get('jumlah_siswa') or 0),
+            alamat=request.form.get('alamat', '').strip(),
+            latitude=float(lat) if lat else None,
+            longitude=float(lng) if lng else None,
+            catatan=request.form.get('catatan', '').strip(),
+        )
+        db.session.add(s)
         db.session.commit()
-        flash(f'Sekolah "{nama}" ditambahkan.', 'success')
+        if not s.punya_lokasi:
+            flash(f'Sekolah "{nama}" tersimpan, tapi belum ada titik lokasi — van ke sekolah ini tidak muncul di peta pelacakan.', 'error')
+        else:
+            flash(f'Sekolah "{nama}" ditambahkan beserta titik lokasinya.', 'success')
         return redirect(url_for('sekolah_list'))
-    return render_template('sekolah_form.html')
+    return render_template('sekolah_form.html', sekolah=None)
+
+
+@app.route('/sekolah/<int:sekolah_id>/edit', methods=['GET', 'POST'])
+@login_required
+def sekolah_edit(sekolah_id):
+    s = Sekolah.query.get_or_404(sekolah_id)
+    if request.method == 'POST':
+        lat = request.form.get('latitude', '').strip()
+        lng = request.form.get('longitude', '').strip()
+        s.nama = request.form.get('nama', '').strip()
+        s.jumlah_siswa = int(request.form.get('jumlah_siswa') or 0)
+        s.alamat = request.form.get('alamat', '').strip()
+        s.latitude = float(lat) if lat else None
+        s.longitude = float(lng) if lng else None
+        s.catatan = request.form.get('catatan', '').strip()
+        db.session.commit()
+        flash(f'Data sekolah "{s.nama}" diperbarui.', 'success')
+        return redirect(url_for('sekolah_list'))
+    return render_template('sekolah_form.html', sekolah=s)
+
+
+# ---------------- ROUTES: PELACAKAN ----------------
+
+@app.route('/pelacakan')
+@login_required
+def pelacakan():
+    aktif = Distribusi.query.filter_by(status='Berjalan').all()
+    terlacak = [d for d in aktif if d.bisa_dilacak]
+    tanpa_lokasi = [d for d in aktif if not d.bisa_dilacak]
+    return render_template('pelacakan.html',
+                           terlacak=terlacak,
+                           tanpa_lokasi=tanpa_lokasi,
+                           cabangs=[c for c in Cabang.query.all() if c.punya_lokasi],
+                           sekolahs=[s for s in Sekolah.query.all() if s.punya_lokasi],
+                           sekolah_tanpa_lokasi=Sekolah.query.filter_by(latitude=None).count())
+
+
+@app.route('/api/pelacakan/posisi')
+@login_required
+def api_pelacakan_posisi():
+    """Posisi semua van yang sedang jalan, dipanggil ulang tiap 10 detik oleh peta."""
+    data = []
+    for d in Distribusi.query.filter_by(status='Berjalan').all():
+        if not d.bisa_dilacak:
+            continue
+        pos = d.posisi
+        data.append({
+            'id': d.id,
+            'kode': d.kode,
+            'plat': d.kendaraan.plat,
+            'model': d.kendaraan.model or d.kendaraan.jenis,
+            'sopir': d.sopir.nama if d.sopir else 'Belum ditugaskan',
+            'porsi': d.jumlah_porsi,
+            'progres': d.progres,
+            'sisa_menit': d.sisa_menit,
+            'lat': pos['lat'],
+            'lng': pos['lng'],
+            'asal': {'nama': d.cabang.nama, 'lat': d.cabang.latitude, 'lng': d.cabang.longitude},
+            'tujuan': {'nama': d.sekolah.nama, 'lat': d.sekolah.latitude, 'lng': d.sekolah.longitude},
+        })
+    return {'jumlah': len(data), 'van': data}
 
 
 # ---------------- INIT DB ----------------
@@ -818,9 +942,15 @@ def init_db():
     # hosting gratis yang tidak menyediakan akses Shell untuk jalankan seed.py manual)
     if Sekolah.query.count() == 0:
         sekolahs = [
-            Sekolah(nama="SDN 1 Purwodadi", jumlah_siswa=310),
-            Sekolah(nama="SDN 3 Grobogan", jumlah_siswa=245),
-            Sekolah(nama="SMPN 2 Purwodadi", jumlah_siswa=480),
+            Sekolah(nama="SDN 1 Purwodadi", jumlah_siswa=310,
+                    alamat="Jl. Gajah Mada No. 8, Purwodadi", latitude=-7.0895, longitude=110.9152,
+                    catatan="Gerbang utama sempit, van masuk lewat pintu samping. Serah terima di kantor guru."),
+            Sekolah(nama="SDN 3 Grobogan", jumlah_siswa=245,
+                    alamat="Jl. P. Diponegoro No. 21, Grobogan", latitude=-7.0231, longitude=110.9784,
+                    catatan="Jam istirahat 09.30, usahakan tiba sebelum itu."),
+            Sekolah(nama="SMPN 2 Purwodadi", jumlah_siswa=480,
+                    alamat="Jl. R. Suprapto No. 74, Purwodadi", latitude=-7.1042, longitude=110.9068,
+                    catatan="Porsi terbesar, minimal 2 petugas untuk bongkar muat."),
         ]
         db.session.add_all(sekolahs)
         db.session.commit()
@@ -868,11 +998,14 @@ def init_db():
     if Cabang.query.count() == 0:
         cabangs = [
             Cabang(nama="SPPG Purwodadi Kota", kode="PWD-01", alamat="Jl. R. Suprapto No. 12, Purwodadi",
-                   kapasitas_porsi=1200, kepala="Rahmat Hidayat", telepon="0812-3300-1101"),
+                   kapasitas_porsi=1200, kepala="Rahmat Hidayat", telepon="0812-3300-1101",
+                   latitude=-7.0951, longitude=110.9142),
             Cabang(nama="SPPG Grobogan Barat", kode="GBR-02", alamat="Jl. Diponegoro No. 45, Grobogan",
-                   kapasitas_porsi=800, kepala="Nurul Aini", telepon="0812-3300-2202"),
+                   kapasitas_porsi=800, kepala="Nurul Aini", telepon="0812-3300-2202",
+                   latitude=-7.0288, longitude=110.9701),
             Cabang(nama="SPPG Toroh", kode="TRH-03", alamat="Jl. Raya Toroh KM 4, Toroh",
-                   kapasitas_porsi=600, kepala="Bagas Prakoso", telepon="0812-3300-3303"),
+                   kapasitas_porsi=600, kepala="Bagas Prakoso", telepon="0812-3300-3303",
+                   latitude=-7.1524, longitude=110.9433),
         ]
         db.session.add_all(cabangs)
         db.session.commit()
@@ -938,6 +1071,12 @@ def init_db():
                 d.berangkat_pada = sekarang - timedelta(minutes=menit)
                 d.tiba_pada = sekarang - timedelta(minutes=menit - 42)
             db.session.add(d)
+        db.session.commit()
+
+        # Samakan jarak dengan hasil hitung koordinat supaya angka di UI konsisten.
+        for d in Distribusi.query.all():
+            if d.bisa_dilacak:
+                d.jarak_km = d.jarak_hitung
         db.session.commit()
 
 

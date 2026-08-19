@@ -13,6 +13,19 @@ checklist keamanan pangan, sampai distribusi porsi ke sekolah oleh armada van ti
 - Alur status: Dijadwalkan -> Berjalan -> Selesai, dengan opsi pembatalan.
 - Papan status armada: Tersedia / Dalam Perjalanan / Perawatan.
 
+**Pelacakan van di peta**
+- Peta live (Leaflet + OpenStreetMap, gratis tanpa API key) menampilkan posisi van, cabang asal, dan sekolah tujuan.
+- Posisi van diperbarui otomatis tiap 10 detik lewat `GET /api/pelacakan/posisi`.
+- Posisi dihitung dengan interpolasi antara koordinat cabang dan sekolah berdasarkan progres waktu tempuh
+  (perkiraan operasional, bukan GPS perangkat).
+- Jarak antar titik dihitung otomatis memakai rumus haversine.
+
+**Data sekolah**
+- Setiap sekolah menyimpan alamat, titik koordinat, dan catatan pengantaran.
+- Titik lokasi dipilih dengan klik di peta atau dicari otomatis dari alamat (geocoding Nominatim); penanda bisa digeser.
+- Sekolah tanpa titik lokasi ditandai jelas di daftar dan tidak muncul di peta pelacakan.
+- Catatan pengantaran tampil di halaman detail perjalanan agar terbaca sopir.
+
 **Cabang & Tim**
 - Daftar dapur SPPG beserta status operasional (Beroperasi / Standby / Nonaktif) dan beban kapasitas harian.
 - Kelola pekerja per cabang (kepala dapur, juru masak, sopir, QC gizi, admin) beserta shift dan status bertugas.
