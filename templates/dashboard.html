@@ -107,7 +107,10 @@
   <div class="card-body">
     <div class="d-flex align-items-center justify-content-between mb-3">
       <h6 class="fw-bold mb-0"><span class="live-dot"></span> Van yang Sedang Jalan</h6>
-      <a href="{{ url_for('distribusi_list') }}" class="small text-decoration-none fw-semibold">Lihat semua</a>
+      <div class="d-flex gap-3">
+        <a href="{{ url_for('pelacakan') }}" class="small text-decoration-none fw-semibold"><i class="bi bi-geo-alt-fill"></i> Lacak di peta</a>
+        <a href="{{ url_for('distribusi_list') }}" class="small text-decoration-none fw-semibold">Lihat semua</a>
+      </div>
     </div>
     <div class="row g-3">
       {% for d in distribusi_berjalan %}

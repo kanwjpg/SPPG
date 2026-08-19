@@ -943,3 +943,64 @@ h1, h2, h3, h4, h5, h6, .display-font {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ============ PETA PELACAKAN ============ */
+.map-canvas {
+  height: 520px;
+  width: 100%;
+  border-radius: var(--radius-md);
+  z-index: 1;
+}
+.map-canvas-sm { height: 300px; }
+
+.map-pin {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  border: 2.5px solid #fff;
+  box-shadow: 0 2px 8px rgba(18, 33, 26, 0.28);
+}
+.pin-cabang { background: var(--dark); color: var(--accent); }
+.pin-sekolah { background: var(--accent-deep); color: #fff; }
+.pin-van {
+  background: var(--warning);
+  color: #4A3200;
+  animation: pulseBadge 2s infinite;
+}
+
+.map-legend {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 12px 8px 4px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.map-legend i { margin-right: 5px; }
+.map-legend span:nth-child(1) i { color: var(--warning); }
+.map-legend span:nth-child(2) i { color: var(--dark); }
+.map-legend span:nth-child(3) i { color: var(--accent-deep); }
+
+.track-item {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color 0.18s var(--ease), background 0.18s var(--ease);
+}
+.track-item:hover { border-color: var(--accent-deep); background: #F8FAF4; }
+.track-item:last-child { margin-bottom: 0; }
+
+/* Popup Leaflet disesuaikan dengan tema aplikasi */
+.leaflet-popup-content-wrapper {
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+}
+.leaflet-popup-content { margin: 12px 14px; line-height: 1.5; }
+.leaflet-container { font-family: 'Inter', sans-serif; }

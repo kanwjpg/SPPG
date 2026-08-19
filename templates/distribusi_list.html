@@ -8,7 +8,10 @@
     <h3 class="mb-1">Distribusi Makanan Bergizi</h3>
     <p class="text-muted mb-0 small">Pantau armada yang sedang mengantar porsi ke sekolah secara langsung.</p>
   </div>
-  <a href="{{ url_for('distribusi_tambah') }}" class="btn btn-success"><i class="bi bi-plus-circle"></i> Jadwalkan Pengantaran</a>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('pelacakan') }}" class="btn btn-outline-secondary"><i class="bi bi-geo-alt-fill"></i> Peta Pelacakan</a>
+    <a href="{{ url_for('distribusi_tambah') }}" class="btn btn-success"><i class="bi bi-plus-circle"></i> Jadwalkan Pengantaran</a>
+  </div>
 </div>
 
 <!-- Ringkasan -->

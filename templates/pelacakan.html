@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% block title %}Pelacakan Van - SPPG Manager{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
+
+{% block content %}
+
+<span class="eyebrow">Pelacakan Armada</span>
+<div class="section-header">
+  <div>
+    <h3 class="mb-1">Peta Pelacakan Van</h3>
+    <p class="text-muted mb-0 small">Posisi van diperbarui otomatis tiap 10 detik.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <span class="status-tag status-beroperasi align-self-center">
+      <span class="status-dot"></span><span id="jumlahVan">{{ terlacak|length }}</span> van aktif
+    </span>
+    <a href="{{ url_for('distribusi_list') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-list-ul"></i> Daftar Distribusi
+    </a>
+  </div>
+</div>
+
+{% if sekolah_tanpa_lokasi %}
+<div class="alert alert-floating alert-danger d-flex align-items-center gap-2 mb-3">
+  <i class="bi bi-geo-alt"></i>
+  <div><strong>{{ sekolah_tanpa_lokasi }}</strong> sekolah belum punya titik lokasi, jadi van ke sana tidak bisa dilacak.
+  <a href="{{ url_for('sekolah_list') }}" class="alert-link">Lengkapi lokasi</a></div>
+</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card border-0">
+      <div class="card-body p-2">
+        <div id="peta" class="map-canvas"></div>
+        <div class="map-legend">
+          <span><i class="bi bi-truck"></i> Van berjalan</span>
+          <span><i class="bi bi-house-door-fill"></i> Cabang SPPG</span>
+          <span><i class="bi bi-geo-alt-fill"></i> Sekolah tujuan</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card border-0 h-100">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3"><span class="live-dot"></span> Van dalam Perjalanan</h6>
+        <div id="daftarVan">
+          {% for d in terlacak %}
+          <div class="track-item" onclick="fokusVan({{ d.id }})" data-van="{{ d.id }}">
+            <div class="d-flex justify-content-between align-items-start mb-1">
+              <div>
+                <strong>{{ d.kendaraan.plat }}</strong>
+                <div class="small text-muted">{{ d.sopir.nama if d.sopir else 'Sopir belum ditugaskan' }}</div>
+              </div>
+              <span class="badge bg-warning-subtle text-warning-emphasis track-eta">{{ d.sisa_menit }} mnt</span>
+            </div>
+            <div class="small text-muted mb-2">
+              <i class="bi bi-arrow-right-short"></i> {{ d.sekolah.nama }}
+            </div>
+            <div class="load-bar"><span class="track-bar" style="width: {{ d.progres }}%;"></span></div>
+          </div>
+          {% else %}
+          <div class="empty-state">
+            <i class="bi bi-geo-alt"></i>
+            <p class="mb-0 small">Belum ada van yang bisa dilacak saat ini.</p>
+          </div>
+          {% endfor %}
+        </div>
+
+        {% if tanpa_lokasi %}
+        <div class="border-top mt-3 pt-3">
+          <div class="small text-muted mb-2">Sedang jalan tapi belum bisa dilacak:</div>
+          {% for d in tanpa_lokasi %}
+          <div class="small mb-1">
+            <i class="bi bi-exclamation-circle text-warning"></i>
+            {{ d.kendaraan.plat }} &rarr; {{ d.sekolah.nama }}
+            <span class="text-muted">(lokasi belum diisi)</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const peta = L.map('peta').setView([-7.09, 110.93], 12);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap',
+  maxZoom: 18,
+}).addTo(peta);
+
+// --- Penanda tetap: cabang & sekolah ---
+function ikon(kelas, simbol) {
+  return L.divIcon({
+    className: '',
+    html: `<span class="map-pin ${kelas}"><i class="bi ${simbol}"></i></span>`,
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+  });
+}
+
+{% for c in cabangs %}
+L.marker([{{ c.latitude }}, {{ c.longitude }}], { icon: ikon('pin-cabang', 'bi-house-door-fill') })
+  .addTo(peta).bindPopup(`<strong>{{ c.nama }}</strong><br>{{ c.kode }} &middot; kapasitas {{ c.kapasitas_porsi }} porsi`);
+{% endfor %}
+
+{% for s in sekolahs %}
+L.marker([{{ s.latitude }}, {{ s.longitude }}], { icon: ikon('pin-sekolah', 'bi-geo-alt-fill') })
+  .addTo(peta).bindPopup(`<strong>{{ s.nama }}</strong><br>{{ s.jumlah_siswa }} siswa{% if s.catatan %}<br><em>{{ s.catatan }}</em>{% endif %}`);
+{% endfor %}
+
+// --- Penanda van: dibuat sekali, lalu digeser posisinya ---
+const penandaVan = {};
+const garisRute = {};
+
+function gambarVan(v) {
+  const posisi = [v.lat, v.lng];
+
+  if (penandaVan[v.id]) {
+    penandaVan[v.id].setLatLng(posisi);
+  } else {
+    penandaVan[v.id] = L.marker(posisi, { icon: ikon('pin-van', 'bi-truck') }).addTo(peta);
+    garisRute[v.id] = L.polyline(
+      [[v.asal.lat, v.asal.lng], [v.tujuan.lat, v.tujuan.lng]],
+      { color: '#7CB518', weight: 3, opacity: 0.5, dashArray: '6 8' }
+    ).addTo(peta);
+  }
+
+  penandaVan[v.id].bindPopup(
+    `<strong>${v.plat}</strong><br>${v.model}<br>` +
+    `Sopir: ${v.sopir}<br>Tujuan: ${v.tujuan.nama}<br>` +
+    `${v.porsi} porsi &middot; ${v.progres}% &middot; ${v.sisa_menit} menit lagi`
+  );
+}
+
+function fokusVan(id) {
+  const m = penandaVan[id];
+  if (m) { peta.setView(m.getLatLng(), 14); m.openPopup(); }
+}
+
+async function muatPosisi() {
+  try {
+    const res = await fetch("{{ url_for('api_pelacakan_posisi') }}");
+    if (!res.ok) return;
+    const data = await res.json();
+
+    document.getElementById('jumlahVan').textContent = data.jumlah;
+
+    const idAktif = new Set(data.van.map(v => v.id));
+    data.van.forEach(v => {
+      gambarVan(v);
+      const kartu = document.querySelector(`[data-van="${v.id}"]`);
+      if (kartu) {
+        kartu.querySelector('.track-bar').style.width = v.progres + '%';
+        kartu.querySelector('.track-eta').textContent = v.sisa_menit + ' mnt';
+      }
+    });
+
+    // Bersihkan van yang sudah tiba supaya tidak nyangkut di peta.
+    Object.keys(penandaVan).forEach(id => {
+      if (!idAktif.has(Number(id))) {
+        peta.removeLayer(penandaVan[id]);
+        peta.removeLayer(garisRute[id]);
+        delete penandaVan[id];
+        delete garisRute[id];
+      }
+    });
+  } catch (e) { /* offline: pertahankan posisi terakhir */ }
+}
+
+muatPosisi();
+setInterval(muatPosisi, 10000);
+</script>
+{% endblock %}

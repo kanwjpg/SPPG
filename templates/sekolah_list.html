@@ -1,20 +1,57 @@
 {% extends 'base.html' %}
 {% block title %}Sekolah - SPPG Manager{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h3 class="fw-bold mb-0">Sekolah Penerima</h3>
-  <a href="{{ url_for('sekolah_tambah') }}" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Tambah Sekolah</a>
+
+<span class="eyebrow">Penerima Manfaat</span>
+<div class="section-header">
+  <div>
+    <h3 class="mb-1">Sekolah Penerima</h3>
+    <p class="text-muted mb-0 small">Sekolah tanpa titik lokasi tidak bisa dilacak di peta distribusi.</p>
+  </div>
+  <a href="{{ url_for('sekolah_tambah') }}" class="btn btn-success"><i class="bi bi-plus-circle"></i> Tambah Sekolah</a>
 </div>
-<div class="table-responsive">
-<table class="table table-hover bg-white shadow-sm rounded">
-  <thead><tr><th>Nama Sekolah</th><th>Jumlah Siswa</th></tr></thead>
-  <tbody>
-    {% for s in sekolahs %}
-    <tr><td>{{ s.nama }}</td><td>{{ s.jumlah_siswa }}</td></tr>
-    {% else %}
-    <tr><td colspan="2" class="text-center text-muted py-4">Belum ada sekolah terdaftar.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+
+<div class="card border-0">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Nama Sekolah</th><th>Alamat</th>
+            <th class="text-end">Siswa</th><th>Lokasi</th><th>Catatan</th><th class="text-end">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in sekolahs %}
+          <tr>
+            <td class="fw-semibold">{{ s.nama }}</td>
+            <td class="small text-muted">{{ s.alamat or '—' }}</td>
+            <td class="text-end">{{ s.jumlah_siswa }}</td>
+            <td>
+              {% if s.punya_lokasi %}
+              <span class="badge bg-success-subtle text-success-emphasis"><i class="bi bi-geo-alt-fill"></i> Tertandai</span>
+              {% else %}
+              <span class="badge bg-danger-subtle text-danger-emphasis"><i class="bi bi-geo-alt"></i> Belum diisi</span>
+              {% endif %}
+            </td>
+            <td class="small text-muted">
+              {% if s.catatan %}
+              <span title="{{ s.catatan }}">{{ s.catatan[:45] }}{% if s.catatan|length > 45 %}...{% endif %}</span>
+              {% else %}—{% endif %}
+            </td>
+            <td class="text-end">
+              <a href="{{ url_for('sekolah_edit', sekolah_id=s.id) }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-pencil"></i> Edit
+              </a>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="text-center text-muted py-4">Belum ada sekolah terdaftar.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
+
 {% endblock %}

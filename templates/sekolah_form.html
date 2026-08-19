@@ -1,17 +1,183 @@
 {% extends 'base.html' %}
-{% block title %}Tambah Sekolah{% endblock %}
+{% block title %}{{ 'Edit' if sekolah else 'Tambah' }} Sekolah - SPPG Manager{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
+
 {% block content %}
-<h3 class="fw-bold mb-3">Tambah Sekolah</h3>
-<form method="POST" class="card shadow-sm p-4" style="max-width:500px">
-  <div class="mb-3">
-    <label class="form-label">Nama Sekolah</label>
-    <input type="text" name="nama" class="form-control" required>
+
+<span class="eyebrow">Data Sekolah</span>
+<div class="section-header">
+  <h3 class="mb-0">{{ 'Edit' if sekolah else 'Tambah' }} Sekolah</h3>
+  <a href="{{ url_for('sekolah_list') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
+</div>
+
+<form method="POST">
+  <div class="row g-3">
+    <div class="col-lg-5">
+      <div class="card border-0 h-100">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3">Identitas</h6>
+
+          <div class="mb-3">
+            <label class="form-label">Nama sekolah</label>
+            <input type="text" name="nama" class="form-control"
+                   value="{{ sekolah.nama if sekolah else '' }}" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Jumlah siswa penerima</label>
+            <input type="number" name="jumlah_siswa" class="form-control" min="0"
+                   value="{{ sekolah.jumlah_siswa if sekolah else '' }}" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Alamat</label>
+            <input type="text" name="alamat" class="form-control" id="inputAlamat"
+                   placeholder="Jalan, kelurahan, kecamatan"
+                   value="{{ sekolah.alamat or '' if sekolah else '' }}">
+            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="tombolCari">
+              <i class="bi bi-search"></i> Cari alamat di peta
+            </button>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Catatan pengantaran</label>
+            <textarea name="catatan" class="form-control" rows="4"
+                      placeholder="Contoh: gerbang utama sempit, van masuk lewat pintu samping. Serah terima ke petugas piket.">{{ sekolah.catatan or '' if sekolah else '' }}</textarea>
+            <div class="form-text">Catatan ini muncul saat sopir membuka detail pengantaran.</div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button class="btn btn-success"><i class="bi bi-check2"></i> Simpan</button>
+            <a href="{{ url_for('sekolah_list') }}" class="btn btn-outline-secondary">Batal</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-7">
+      <div class="card border-0 h-100">
+        <div class="card-body">
+          <h6 class="fw-bold mb-1">Titik Lokasi</h6>
+          <p class="text-muted small mb-3">Klik di peta untuk menandai lokasi sekolah. Titik ini dipakai untuk melacak van dan menghitung jarak otomatis.</p>
+
+          <div id="petaPilih" class="map-canvas map-canvas-sm mb-3"></div>
+
+          <div class="row g-2">
+            <div class="col-md-5">
+              <label class="form-label small">Latitude</label>
+              <input type="text" name="latitude" id="inputLat" class="form-control form-control-sm"
+                     value="{{ sekolah.latitude or '' if sekolah else '' }}" readonly>
+            </div>
+            <div class="col-md-5">
+              <label class="form-label small">Longitude</label>
+              <input type="text" name="longitude" id="inputLng" class="form-control form-control-sm"
+                     value="{{ sekolah.longitude or '' if sekolah else '' }}" readonly>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+              <button type="button" class="btn btn-sm btn-outline-danger w-100" id="tombolHapusTitik">Hapus</button>
+            </div>
+          </div>
+          <div class="form-text mt-2" id="statusTitik"></div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="mb-3">
-    <label class="form-label">Jumlah Siswa</label>
-    <input type="number" name="jumlah_siswa" class="form-control" required>
-  </div>
-  <button type="submit" class="btn btn-primary">Simpan</button>
-  <a href="{{ url_for('sekolah_list') }}" class="btn btn-outline-secondary">Batal</a>
 </form>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const latAwal = parseFloat("{{ sekolah.latitude if sekolah and sekolah.latitude else '' }}");
+const lngAwal = parseFloat("{{ sekolah.longitude if sekolah and sekolah.longitude else '' }}");
+const adaTitikAwal = !isNaN(latAwal) && !isNaN(lngAwal);
+
+const peta = L.map('petaPilih').setView(
+  adaTitikAwal ? [latAwal, lngAwal] : [-7.09, 110.93],
+  adaTitikAwal ? 15 : 12
+);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap', maxZoom: 18,
+}).addTo(peta);
+
+const ikonSekolah = L.divIcon({
+  className: '',
+  html: '<span class="map-pin pin-sekolah"><i class="bi bi-geo-alt-fill"></i></span>',
+  iconSize: [34, 34], iconAnchor: [17, 17],
+});
+
+let penanda = null;
+const inputLat = document.getElementById('inputLat');
+const inputLng = document.getElementById('inputLng');
+const statusTitik = document.getElementById('statusTitik');
+
+function simpanTitik(lat, lng) {
+  inputLat.value = lat.toFixed(6);
+  inputLng.value = lng.toFixed(6);
+  statusTitik.textContent = 'Titik tersimpan. Geser penanda kalau posisinya kurang pas.';
+  statusTitik.className = 'form-text mt-2 text-success fw-semibold';
+}
+
+function pasangTitik(lat, lng) {
+  if (penanda) {
+    penanda.setLatLng([lat, lng]);
+  } else {
+    penanda = L.marker([lat, lng], { icon: ikonSekolah, draggable: true }).addTo(peta);
+    penanda.on('dragend', e => {
+      const p = e.target.getLatLng();
+      simpanTitik(p.lat, p.lng);
+    });
+  }
+  simpanTitik(lat, lng);
+}
+
+if (adaTitikAwal) {
+  pasangTitik(latAwal, lngAwal);
+} else {
+  statusTitik.textContent = 'Belum ada titik. Klik peta untuk menandai lokasi sekolah.';
+  statusTitik.className = 'form-text mt-2 text-danger';
+}
+
+peta.on('click', e => pasangTitik(e.latlng.lat, e.latlng.lng));
+
+document.getElementById('tombolHapusTitik').addEventListener('click', () => {
+  if (penanda) { peta.removeLayer(penanda); penanda = null; }
+  inputLat.value = '';
+  inputLng.value = '';
+  statusTitik.textContent = 'Titik dihapus. Sekolah ini tidak akan muncul di peta pelacakan.';
+  statusTitik.className = 'form-text mt-2 text-danger';
+});
+
+// Cari koordinat dari alamat lewat Nominatim (gratis, tanpa API key).
+document.getElementById('tombolCari').addEventListener('click', async () => {
+  const alamat = document.getElementById('inputAlamat').value.trim();
+  if (!alamat) {
+    statusTitik.textContent = 'Isi alamatnya dulu sebelum mencari.';
+    statusTitik.className = 'form-text mt-2 text-danger';
+    return;
+  }
+  statusTitik.textContent = 'Mencari alamat...';
+  statusTitik.className = 'form-text mt-2';
+  try {
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(alamat);
+    const res = await fetch(url);
+    const hasil = await res.json();
+    if (hasil.length) {
+      const lat = parseFloat(hasil[0].lat), lng = parseFloat(hasil[0].lon);
+      peta.setView([lat, lng], 16);
+      pasangTitik(lat, lng);
+    } else {
+      statusTitik.textContent = 'Alamat tidak ditemukan. Tandai manual dengan klik di peta.';
+      statusTitik.className = 'form-text mt-2 text-danger';
+    }
+  } catch (e) {
+    statusTitik.textContent = 'Pencarian gagal (butuh internet). Tandai manual dengan klik di peta.';
+    statusTitik.className = 'form-text mt-2 text-danger';
+  }
+});
+</script>
 {% endblock %}

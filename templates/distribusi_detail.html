@@ -1,5 +1,10 @@
 {% extends 'base.html' %}
 {% block title %}{{ d.kode }} - SPPG Manager{% endblock %}
+
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
 {% block content %}
 
 <span class="eyebrow">Detail Pengantaran</span>
@@ -144,6 +149,34 @@
   </div>
 </div>
 
+<!-- Peta rute -->
+{% if d.bisa_dilacak %}
+<div class="card border-0 mb-3">
+  <div class="card-body">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h6 class="fw-bold mb-0">
+        {% if d.status == 'Berjalan' %}<span class="live-dot"></span>Posisi Van{% else %}Rute Pengantaran{% endif %}
+      </h6>
+      <span class="small text-muted">Jarak garis lurus: {{ d.jarak_hitung }} km</span>
+    </div>
+    <div id="petaRute" class="map-canvas map-canvas-sm"></div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Catatan sekolah -->
+{% if d.sekolah.catatan %}
+<div class="card border-0 mb-3">
+  <div class="card-body">
+    <h6 class="fw-bold mb-2"><i class="bi bi-info-circle"></i> Catatan {{ d.sekolah.nama }}</h6>
+    <p class="mb-0 small">{{ d.sekolah.catatan }}</p>
+    {% if d.sekolah.alamat %}
+    <p class="mb-0 small text-muted mt-2"><i class="bi bi-geo-alt"></i> {{ d.sekolah.alamat }}</p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
 <!-- Riwayat kendaraan -->
 <div class="card border-0">
   <div class="card-body">
@@ -170,4 +203,52 @@
   </div>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+{% if d.bisa_dilacak %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const asal = [{{ d.cabang.latitude }}, {{ d.cabang.longitude }}];
+const tujuan = [{{ d.sekolah.latitude }}, {{ d.sekolah.longitude }}];
+
+const peta = L.map('petaRute');
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap', maxZoom: 18,
+}).addTo(peta);
+
+function ikon(kelas, simbol) {
+  return L.divIcon({
+    className: '',
+    html: `<span class="map-pin ${kelas}"><i class="bi ${simbol}"></i></span>`,
+    iconSize: [34, 34], iconAnchor: [17, 17],
+  });
+}
+
+L.marker(asal, { icon: ikon('pin-cabang', 'bi-house-door-fill') }).addTo(peta)
+  .bindPopup("{{ d.cabang.nama }}");
+L.marker(tujuan, { icon: ikon('pin-sekolah', 'bi-geo-alt-fill') }).addTo(peta)
+  .bindPopup("{{ d.sekolah.nama }}");
+
+const rute = L.polyline([asal, tujuan], {
+  color: '#7CB518', weight: 3, opacity: 0.6, dashArray: '6 8'
+}).addTo(peta);
+peta.fitBounds(rute.getBounds(), { padding: [40, 40] });
+
+{% if d.status == 'Berjalan' and d.posisi %}
+const van = L.marker([{{ d.posisi.lat }}, {{ d.posisi.lng }}], { icon: ikon('pin-van', 'bi-truck') })
+  .addTo(peta).bindPopup("{{ d.kendaraan.plat }} — {{ d.progres }}%").openPopup();
+
+// Geser posisi van tiap 10 detik selama perjalanan masih berlangsung.
+setInterval(async () => {
+  try {
+    const res = await fetch("{{ url_for('api_pelacakan_posisi') }}");
+    const data = await res.json();
+    const ini = data.van.find(v => v.id === {{ d.id }});
+    if (ini) van.setLatLng([ini.lat, ini.lng]);
+  } catch (e) { /* offline: pertahankan posisi terakhir */ }
+}, 10000);
+{% endif %}
+</script>
+{% endif %}
 {% endblock %}
